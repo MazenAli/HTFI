@@ -1,0 +1,25 @@
+==========================
+HTFI: HTucker C++ Library
+==========================
+
+Original version written by Andreas Rupp.
+Contains modifications to source code in order to compile with clang.
+
+Original note from author:
+========================================================================================
+This folder contains all C++ Librarys from Ulm University that are necessary 
+reproduce the results in the thesis:
+
+- FLENS-lite
+- LAWA-lite
+- HTFI (HTucker c++ Library)
+
+Note that neither FLENS nor LAWA are the newest versions. There are many improvements
+in the current versions of both librarys (also of the structure of the library itself),
+which requires adaptions of the hierarchical Tucker C++ Library to work with the current
+versions.
+
+Additionally, BLAS and Lapack have to be installed (see also FLENS documentary)
+
+The main program can be found in LAWA-lite/applications/htucker/KS_CDO_model_pricing.cpp
+========================================================================================
