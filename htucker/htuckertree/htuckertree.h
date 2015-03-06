@@ -46,7 +46,7 @@ public:
 	//please call this function only for vectors of small length!!!
 	void print_values() const;
 
-	GeneralTree<HTuckerTreeNode<T> > &
+	const GeneralTree<HTuckerTreeNode<T> > &
 	getGeneralTree() const;
 
 	T evaluate(const DimensionIndex &index) const; 

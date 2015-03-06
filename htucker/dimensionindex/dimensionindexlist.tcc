@@ -73,6 +73,7 @@ DimensionIndexList::length() const{
 	return len;
 };
 
+// This function not really const // Mazen
 DimensionIndex& 
 DimensionIndexList::operator[] (const int x) const{
 	assert(x>= 0 && x < len);

@@ -99,10 +99,10 @@ void test_problem(){
     BSOperator1D <double, Basis<double,Orthogonal,Interval,Multi> > a(basis, 0.05,0.07,0.25);
 
 	Assembler1D <double, Basis<double,Orthogonal,Interval,Multi> > assembler(basis);
-	SparseGeMatrix<flens::CRS<double ,flens::CRS_General> >   A = assembler.assembleStiffnessMatrix(a, J);
+	SparseGeMatrix<flens::extensions::CRS<double ,flens::CRS_General> >   A = assembler.assembleStiffnessMatrix(a, J);
 
 
-	MatrixTensor<SparseGeMatrix<flens::CRS<double ,flens::CRS_General> > > mt(1);
+	MatrixTensor<SparseGeMatrix<flens::extensions::CRS<double ,flens::CRS_General> > > mt(1);
 	mt.setMatrix(1,A);
 	
 //---------------------------------------------------------------------------------------------------------------------------------------

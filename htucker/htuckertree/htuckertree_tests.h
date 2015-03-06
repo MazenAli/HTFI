@@ -14,7 +14,7 @@ namespace lawa{
 
 
 void test_sparse_mult_ge(){
-	SparseGeMatrix<CRS<double,CRS_General> > s(3,4);
+	SparseGeMatrix<flens::extensions::CRS<double,flens::CRS_General> > s(3,4);
 	s(1,2) = 1;
 	s(2,3) = 2;
 	s(3,4) = 3;

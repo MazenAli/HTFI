@@ -21,13 +21,13 @@ HTuckerTreeNode<T>::operator= (const HTuckerTreeNode<T> &_copy){
 };
 
 template <typename T>
-DimensionIndex &
+const DimensionIndex &
 HTuckerTreeNode<T>::getIndex() const{
 	return index;
 };
 
 template <typename T>
-flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
+const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
 HTuckerTreeNode<T>::getUorB() const{
 	return UorB;
 };

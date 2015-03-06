@@ -33,10 +33,10 @@ namespace lawa{
 
 //template <typename T> 
 //GeMatrix<FullStorage<T,ColMajor> >
-//operator*(SparseGeMatrix<CRS<T,CRS_General> > & mat, GeMatrix<FullStorage<T,ColMajor> > & gemat){
+//operator*(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > & mat, GeMatrix<FullStorage<T,ColMajor> > & gemat){
 //	assert(mat.numCols() == gemat.numRows());
 //	GeMatrix<FullStorage<T,ColMajor> > ret(mat.numRows(),gemat.numCols());
-//	CRS<T,CRS_General> eng = mat.engine();
+//	flens::extensions::CRS<T,flens::CRS_General> eng = mat.engine();
 //	T val = 0;
 //	for(int i = 1; i <= mat.numRows(); ++i){
 //		for(int j = 1; j<= gemat.numCols(); ++j){
@@ -51,7 +51,7 @@ namespace lawa{
 //};
 
 template <typename T>
-T getElement(SparseGeMatrix<CRS<T,CRS_General> > mat, int row, int col){
+T getElement(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > mat, int row, int col){
 	DenseVector<Array<T> > v = (mat.engine()).values;
 	DenseVector<Array<int> > r = (mat.engine()).rows;
 	DenseVector<Array<int> > c = (mat.engine()).columns;
@@ -72,12 +72,12 @@ T getElement(SparseGeMatrix<CRS<T,CRS_General> > mat, int row, int col){
 }
 
 template <typename T>
-SparseGeMatrix<CRS<T> > 
-kronecker_product(const SparseGeMatrix<CRS<T> > &A,const SparseGeMatrix<CRS<T> > &B)
+SparseGeMatrix<flens::extensions::CRS<T> > 
+kronecker_product(const SparseGeMatrix<flens::extensions::CRS<T> > &A,const SparseGeMatrix<flens::extensions::CRS<T> > &B)
 {
-	const CRS<T> A_crs=A.engine(), B_crs=B.engine();
+	const flens::extensions::CRS<T> A_crs=A.engine(), B_crs=B.engine();
 	int m=A.numRows(), n=A.numCols(),s=B.numRows(), t=B.numCols();
-	SparseGeMatrix<CRS<T> >C(m*s,n*t);
+	SparseGeMatrix<flens::extensions::CRS<T> >C(m*s,n*t);
 	
 	for (int i=1; i<=m; ++i) {
 		for (int j=A_crs.rows(i); j<=A_crs.rows(i+1)-1; ++j) {
@@ -93,7 +93,7 @@ kronecker_product(const SparseGeMatrix<CRS<T> > &A,const SparseGeMatrix<CRS<T> >
 }
 
 //template <typename T>
-//ostream& operator<<(ostream& Stream, SparseGeMatrix<CRS<T> > &B)
+//ostream& operator<<(ostream& Stream, SparseGeMatrix<flens::extensions::CRS<T> > &B)
 //{
 //	Stream << B.numRows() << " x " << B.numCols() << ": " <<  endl;
 //	const DenseVector<Array<T> > & ref = (B.engine().values);
@@ -130,11 +130,11 @@ kronecker_product(const GeMatrix<FullStorage<T,ColMajor> >  &A,const GeMatrix<Fu
 };
 
 template <typename T>
-SparseGeMatrix<CRS<T> > 
-subMatrix(const SparseGeMatrix<CRS<T> > &A, const Range<int> r1, const Range<int> r2)
+SparseGeMatrix<flens::extensions::CRS<T> > 
+subMatrix(const SparseGeMatrix<flens::extensions::CRS<T> > &A, const Range<int> r1, const Range<int> r2)
 {
-	const CRS<T> A_crs=A.engine();
-	SparseGeMatrix<CRS<T> > C(r1.length(),r2.length());
+	const flens::extensions::CRS<T> A_crs=A.engine();
+	SparseGeMatrix<flens::extensions::CRS<T> > C(r1.length(),r2.length());
 	int row_index = 1;
 	for(int i = A_crs.values.firstIndex(); i<= A_crs.values.lastIndex(); ++i){
 		while(!(A_crs.rows(row_index) <= i && A_crs.rows(row_index+1) > i)){
@@ -150,8 +150,8 @@ subMatrix(const SparseGeMatrix<CRS<T> > &A, const Range<int> r1, const Range<int
 
 template <typename T>
 DenseVector<Array<T> >
-getDiagonal(const SparseGeMatrix<CRS<T> > &A){
-	const CRS<T> A_crs = A.engine();
+getDiagonal(const SparseGeMatrix<flens::extensions::CRS<T> > &A){
+	const flens::extensions::CRS<T> A_crs = A.engine();
 	assert(A_crs.numRows() == A_crs.numCols());
 	DenseVector<Array<T> > ret(A_crs.numRows());
 	cout << A_crs.rows.firstIndex() << endl;
@@ -172,9 +172,9 @@ getDiagonal(const SparseGeMatrix<CRS<T> > &A){
 }
 
 template <typename T>
-SparseGeMatrix<CRS<T> >
+SparseGeMatrix<flens::extensions::CRS<T> >
 Unitmatrix(int size){
-	SparseGeMatrix<CRS<T> > ret(size,size);
+	SparseGeMatrix<flens::extensions::CRS<T> > ret(size,size);
 	for(int i = 1; i <= size; ++i){
 		ret(i,i) = 1;
 	}
@@ -183,12 +183,12 @@ Unitmatrix(int size){
 }
 
 template <typename T>
-SparseGeMatrix<CRS<T> >
-operator+ (const SparseGeMatrix<CRS<T> > &A,const SparseGeMatrix<CRS<T> > &B){
+SparseGeMatrix<flens::extensions::CRS<T> >
+operator+ (const SparseGeMatrix<flens::extensions::CRS<T> > &A,const SparseGeMatrix<flens::extensions::CRS<T> > &B){
 	DenseVector<Array<T> > v = (A.engine()).values;
 	DenseVector<Array<int> > r = (A.engine()).rows;
 	DenseVector<Array<int> > c = (A.engine()).columns;
-	SparseGeMatrix<CRS<T> > C(A.numRows(),A.numCols());
+	SparseGeMatrix<flens::extensions::CRS<T> > C(A.numRows(),A.numCols());
 	int rcount = r.firstIndex();
 	for(int i = v.firstIndex(); i <= v.lastIndex(); ++i){
 		if(r(rcount + 1) <= i){
@@ -211,9 +211,9 @@ operator+ (const SparseGeMatrix<CRS<T> > &A,const SparseGeMatrix<CRS<T> > &B){
 }
 
 template <typename T>
-SparseGeMatrix<CRS<T> >
-operator* (const double constval ,const SparseGeMatrix<CRS<T> > &B){
-	SparseGeMatrix<CRS<T> > C(B.numRows(),B.numCols());
+SparseGeMatrix<flens::extensions::CRS<T> >
+operator* (const double constval ,const SparseGeMatrix<flens::extensions::CRS<T> > &B){
+	SparseGeMatrix<flens::extensions::CRS<T> > C(B.numRows(),B.numCols());
 	C = B;
 	for(int i = C.engine().values.firstIndex(); i <= C.engine().values.lastIndex(); ++i){
 		C.engine().values(i) *= constval;
@@ -456,8 +456,8 @@ mm(Transpose transA,
 
 template <typename T>
 GeMatrix<FullStorage<T,ColMajor> >
-sparse2full(SparseGeMatrix<CRS<T,CRS_General> > &A){
-	CRS<T,CRS_General> & cs = A.engine();
+sparse2full(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > &A){
+	flens::extensions::CRS<T,flens::CRS_General> & cs = A.engine();
 	GeMatrix<FullStorage<T,ColMajor> > B(A.numRows(),A.numCols());
 	int j;
 	for(int i = 1; i <= A.numRows(); ++i){

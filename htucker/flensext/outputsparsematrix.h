@@ -2,12 +2,14 @@
 #define HTUCKER_FLENSEXT_OUTPUTSPARSEMATRIX_H 1
 
 #include <iostream>
+#include <extensions/flens/flens.h>
+
 
 namespace flens{
     using namespace std;
 	
     template <typename T>
-	ostream& operator<<(ostream& Stream, SparseGeMatrix<CRS<T> > &B)
+	ostream& operator<<(ostream& Stream, SparseGeMatrix<flens::extensions::CRS<T> > &B)
 	{
 		Stream << B.numRows() << " x " << B.numCols() << ": " <<  endl;
 		const DenseVector<Array<T> > & ref = (B.engine().values);

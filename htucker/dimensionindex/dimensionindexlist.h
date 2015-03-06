@@ -25,6 +25,7 @@ public:
 
 	int length() const;
 
+    // This function not really const // Mazen
 	DimensionIndex& operator[] (const int x) const;
 
 	DimensionIndexList &

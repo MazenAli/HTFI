@@ -26,10 +26,10 @@ class HTuckerTreeNode{
 		HTuckerTreeNode &
 		operator= (const HTuckerTreeNode<T> &_copy);
 
-		DimensionIndex &
+		const DimensionIndex &
 		getIndex() const;
 
-		flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
+		const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
 		getUorB() const;
 
 		void 
