@@ -4,13 +4,11 @@
 
 namespace flens{
 
-using namespace cxxblas;
-
 template <typename T> 
-GeMatrix<FullStorage<T,ColMajor> >
-operator*(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > & mat, GeMatrix<FullStorage<T,ColMajor> > & gemat){
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >
+operator*(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > & mat, flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > & gemat){
 	assert(mat.numCols() == gemat.numRows());
-	GeMatrix<FullStorage<T,ColMajor> > ret(mat.numRows(),gemat.numCols());
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > ret(mat.numRows(),gemat.numCols());
 	flens::extensions::CRS<T,flens::CRS_General> eng = mat.engine();
 	T val = 0;
 	for(int i = 1; i <= mat.numRows(); ++i){

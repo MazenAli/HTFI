@@ -8,8 +8,6 @@
 #include <htucker/matrixtensors/matrixtensor.h>
 
 
-using namespace std;
-
 namespace  htucker{
 
 

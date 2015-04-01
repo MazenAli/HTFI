@@ -24,18 +24,15 @@
 #include <lawa/lawa.h>
 #include <htucker/htucker.h>
 
-
-using namespace flens;
-using namespace htucker;
 namespace lawa{
 
 
 
 //template <typename T> 
-//GeMatrix<FullStorage<T,ColMajor> >
-//operator*(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > & mat, GeMatrix<FullStorage<T,ColMajor> > & gemat){
+//flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >
+//operator*(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > & mat, flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > & gemat){
 //	assert(mat.numCols() == gemat.numRows());
-//	GeMatrix<FullStorage<T,ColMajor> > ret(mat.numRows(),gemat.numCols());
+//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > ret(mat.numRows(),gemat.numCols());
 //	flens::extensions::CRS<T,flens::CRS_General> eng = mat.engine();
 //	T val = 0;
 //	for(int i = 1; i <= mat.numRows(); ++i){
@@ -51,10 +48,10 @@ namespace lawa{
 //};
 
 template <typename T>
-T getElement(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > mat, int row, int col){
-	DenseVector<Array<T> > v = (mat.engine()).values;
-	DenseVector<Array<int> > r = (mat.engine()).rows;
-	DenseVector<Array<int> > c = (mat.engine()).columns;
+T getElement(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > mat, int row, int col){
+	flens::DenseVector<flens::Array<T> > v = (mat.engine()).values;
+	flens::DenseVector<flens::Array<int> > r = (mat.engine()).rows;
+	flens::DenseVector<flens::Array<int> > c = (mat.engine()).columns;
 	int end = r.lastIndex();
 	int searchend;
 	if(row < end){
@@ -72,12 +69,12 @@ T getElement(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > mat, 
 }
 
 template <typename T>
-SparseGeMatrix<flens::extensions::CRS<T> > 
-kronecker_product(const SparseGeMatrix<flens::extensions::CRS<T> > &A,const SparseGeMatrix<flens::extensions::CRS<T> > &B)
+flens::SparseGeMatrix<flens::extensions::CRS<T> > 
+kronecker_product(const flens::SparseGeMatrix<flens::extensions::CRS<T> > &A,const flens::SparseGeMatrix<flens::extensions::CRS<T> > &B)
 {
 	const flens::extensions::CRS<T> A_crs=A.engine(), B_crs=B.engine();
 	int m=A.numRows(), n=A.numCols(),s=B.numRows(), t=B.numCols();
-	SparseGeMatrix<flens::extensions::CRS<T> >C(m*s,n*t);
+	flens::SparseGeMatrix<flens::extensions::CRS<T> >C(m*s,n*t);
 	
 	for (int i=1; i<=m; ++i) {
 		for (int j=A_crs.rows(i); j<=A_crs.rows(i+1)-1; ++j) {
@@ -93,29 +90,29 @@ kronecker_product(const SparseGeMatrix<flens::extensions::CRS<T> > &A,const Spar
 }
 
 //template <typename T>
-//ostream& operator<<(ostream& Stream, SparseGeMatrix<flens::extensions::CRS<T> > &B)
+//ostream& operator<<(ostream& Stream, flens::SparseGeMatrix<flens::extensions::CRS<T> > &B)
 //{
-//	Stream << B.numRows() << " x " << B.numCols() << ": " <<  endl;
-//	const DenseVector<Array<T> > & ref = (B.engine().values);
-//	const DenseVector<Array<T> > & col = (B.engine().columns);
-//	const DenseVector<Array<T> > & refrows = B.engine().rows ;
+//	Stream << B.numRows() << " x " << B.numCols() << ": " <<  std::endl;
+//	const flens::DenseVector<flens::Array<T> > & ref = (B.engine().values);
+//	const flens::DenseVector<flens::Array<T> > & col = (B.engine().columns);
+//	const flens::DenseVector<flens::Array<T> > & refrows = B.engine().rows ;
 //	int j = 1;
 //	for(int i = ref.firstIndex(); i <= ref.lastIndex(); ++i){
 //		
 //		if(j < refrows.length() && refrows(j+1) == i){
 //			j = j + 1;
 //		}
-//		Stream << "(" << j << ", " << col(i) << ") = " << ref(i) << endl;
+//		Stream << "(" << j << ", " << col(i) << ") = " << ref(i) << std::endl;
 //	}
 //	
 //	return Stream;
 //};
 
 template <typename T>
-GeMatrix<FullStorage<T,ColMajor> > 
-kronecker_product(const GeMatrix<FullStorage<T,ColMajor> >  &A,const GeMatrix<FullStorage<T,ColMajor> >  &B)
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > 
+kronecker_product(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >  &A,const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >  &B)
 {
-	GeMatrix<FullStorage<T,ColMajor> >C(A.numRows()*B.numRows(),A.numCols()*B.numCols());
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >C(A.numRows()*B.numRows(),A.numCols()*B.numCols());
 	
 	for(int i1 = A.firstRow(); i1 <= A.lastRow(); i1++){
 		for(int i2 = B.firstRow(); i2 <= B.lastRow(); i2++){
@@ -130,11 +127,11 @@ kronecker_product(const GeMatrix<FullStorage<T,ColMajor> >  &A,const GeMatrix<Fu
 };
 
 template <typename T>
-SparseGeMatrix<flens::extensions::CRS<T> > 
-subMatrix(const SparseGeMatrix<flens::extensions::CRS<T> > &A, const Range<int> r1, const Range<int> r2)
+flens::SparseGeMatrix<flens::extensions::CRS<T> > 
+subMatrix(const flens::SparseGeMatrix<flens::extensions::CRS<T> > &A, const flens::Range<int> r1, const flens::Range<int> r2)
 {
 	const flens::extensions::CRS<T> A_crs=A.engine();
-	SparseGeMatrix<flens::extensions::CRS<T> > C(r1.length(),r2.length());
+	flens::SparseGeMatrix<flens::extensions::CRS<T> > C(r1.length(),r2.length());
 	int row_index = 1;
 	for(int i = A_crs.values.firstIndex(); i<= A_crs.values.lastIndex(); ++i){
 		while(!(A_crs.rows(row_index) <= i && A_crs.rows(row_index+1) > i)){
@@ -149,12 +146,12 @@ subMatrix(const SparseGeMatrix<flens::extensions::CRS<T> > &A, const Range<int> 
 }
 
 template <typename T>
-DenseVector<Array<T> >
-getDiagonal(const SparseGeMatrix<flens::extensions::CRS<T> > &A){
+flens::DenseVector<flens::Array<T> >
+getDiagonal(const flens::SparseGeMatrix<flens::extensions::CRS<T> > &A){
 	const flens::extensions::CRS<T> A_crs = A.engine();
 	assert(A_crs.numRows() == A_crs.numCols());
-	DenseVector<Array<T> > ret(A_crs.numRows());
-	cout << A_crs.rows.firstIndex() << endl;
+	flens::DenseVector<flens::Array<T> > ret(A_crs.numRows());
+	std::cout << A_crs.rows.firstIndex() << std::endl;
 	
 	for(int i = A_crs.rows.firstIndex(); i < A_crs.rows.lastIndex(); ++i){
 		int search = A_crs.rows(i);
@@ -166,15 +163,15 @@ getDiagonal(const SparseGeMatrix<flens::extensions::CRS<T> > &A){
 		} else {
 			ret(i) = 0.0;
 		}
-		//cout << "i = " << i << "  " <<  A_crs.rows(i) << endl;
+		//std::cout << "i = " << i << "  " <<  A_crs.rows(i) << std::endl;
 	}
 	return ret;
 }
 
 template <typename T>
-SparseGeMatrix<flens::extensions::CRS<T> >
+flens::SparseGeMatrix<flens::extensions::CRS<T> >
 Unitmatrix(int size){
-	SparseGeMatrix<flens::extensions::CRS<T> > ret(size,size);
+	flens::SparseGeMatrix<flens::extensions::CRS<T> > ret(size,size);
 	for(int i = 1; i <= size; ++i){
 		ret(i,i) = 1;
 	}
@@ -183,12 +180,12 @@ Unitmatrix(int size){
 }
 
 template <typename T>
-SparseGeMatrix<flens::extensions::CRS<T> >
-operator+ (const SparseGeMatrix<flens::extensions::CRS<T> > &A,const SparseGeMatrix<flens::extensions::CRS<T> > &B){
-	DenseVector<Array<T> > v = (A.engine()).values;
-	DenseVector<Array<int> > r = (A.engine()).rows;
-	DenseVector<Array<int> > c = (A.engine()).columns;
-	SparseGeMatrix<flens::extensions::CRS<T> > C(A.numRows(),A.numCols());
+flens::SparseGeMatrix<flens::extensions::CRS<T> >
+operator+ (const flens::SparseGeMatrix<flens::extensions::CRS<T> > &A,const flens::SparseGeMatrix<flens::extensions::CRS<T> > &B){
+	flens::DenseVector<flens::Array<T> > v = (A.engine()).values;
+	flens::DenseVector<flens::Array<int> > r = (A.engine()).rows;
+	flens::DenseVector<flens::Array<int> > c = (A.engine()).columns;
+	flens::SparseGeMatrix<flens::extensions::CRS<T> > C(A.numRows(),A.numCols());
 	int rcount = r.firstIndex();
 	for(int i = v.firstIndex(); i <= v.lastIndex(); ++i){
 		if(r(rcount + 1) <= i){
@@ -211,9 +208,9 @@ operator+ (const SparseGeMatrix<flens::extensions::CRS<T> > &A,const SparseGeMat
 }
 
 template <typename T>
-SparseGeMatrix<flens::extensions::CRS<T> >
-operator* (const double constval ,const SparseGeMatrix<flens::extensions::CRS<T> > &B){
-	SparseGeMatrix<flens::extensions::CRS<T> > C(B.numRows(),B.numCols());
+flens::SparseGeMatrix<flens::extensions::CRS<T> >
+operator* (const double constval ,const flens::SparseGeMatrix<flens::extensions::CRS<T> > &B){
+	flens::SparseGeMatrix<flens::extensions::CRS<T> > C(B.numRows(),B.numCols());
 	C = B;
 	for(int i = C.engine().values.firstIndex(); i <= C.engine().values.lastIndex(); ++i){
 		C.engine().values(i) *= constval;
@@ -223,15 +220,15 @@ operator* (const double constval ,const SparseGeMatrix<flens::extensions::CRS<T>
 }
 
 template <typename T>
-T LCDet(GeMatrix<FullStorage<T,ColMajor> > mat){
+T LCDet(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 	assert(mat.numCols() == mat.numRows());
-	GeMatrix<FullStorage<T,ColMajor> > last,lastlast,akt;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > last,lastlast,akt;
 	akt = mat;
 	for(int i = mat.numRows()-1; i>=1; --i){
 		lastlast = last;
-		//cout << "lastlast = " << lastlast << endl;
+		//std::cout << "lastlast = " << lastlast << std::endl;
 		last = akt;
-		akt = GeMatrix<FullStorage<T,ColMajor> >(i,i);
+		akt = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(i,i);
 		for(int j = 1; j <= i ; ++j){
 			for(int k = 1; k <= i ; ++k){
 				akt(j,k) = last(j,k)*last(j+1,k+1) - last(j+1,k)*last(j,k+1);
@@ -245,7 +242,7 @@ T LCDet(GeMatrix<FullStorage<T,ColMajor> > mat){
 }
 
 template <typename T>
-T Det(typename TrMatrix<FullStorage<T,ColMajor> >::View mat){
+T Det(typename flens::TrMatrix<flens::FullStorage<T,cxxblas::ColMajor> >::View mat){
 	assert(mat.lastCol() - mat.firstCol() == mat.lastRow()- mat.firstRow());
 	T prod = 1.0;
 	for(int i = mat.firstCol(); i<= mat.lastCol(); ++i){
@@ -255,13 +252,13 @@ T Det(typename TrMatrix<FullStorage<T,ColMajor> >::View mat){
 }
 
 template <typename T>
-T Det(GeMatrix<FullStorage<T,ColMajor> > mat){
+T Det(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 	assert(mat.numRows() == mat.numCols());
 	if(mat.numRows() == 1){
 		return mat(1,1);
 	} else {
-		GeMatrix<FullStorage<T,ColMajor> > tmp = mat;
-		DenseVector<Array<int> > piv(mat.numRows());
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp = mat;
+		flens::DenseVector<flens::Array<int> > piv(mat.numRows());
 		int count = 0;
 		trf(tmp, piv);
 		for(int i = piv.firstIndex(); i<= piv.lastIndex(); ++i){
@@ -269,7 +266,7 @@ T Det(GeMatrix<FullStorage<T,ColMajor> > mat){
 				count++;
 			}
 		}
-		GeMatrix<FullStorage<double,ColMajor> >::TriangularView U = upper(tmp);
+		flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> >::TriangularView U = upper(tmp);
 		
 		count = (count %2)*(-2) + 1;
 
@@ -279,11 +276,11 @@ T Det(GeMatrix<FullStorage<T,ColMajor> > mat){
 
 
 template <typename T>
-T LCMinor(GeMatrix<FullStorage<T,ColMajor> > mat,int _row, int _col){
+T LCMinor(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat,int _row, int _col){
 	assert(mat.numCols() == mat.numRows());
-	GeMatrix<FullStorage<T,ColMajor> > akt;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > akt;
 	if(mat.numRows()>1){
-		akt = GeMatrix<FullStorage<T,ColMajor> >(mat.numRows()-1,mat.numCols()-1);
+		akt = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(mat.numRows()-1,mat.numCols()-1);
 		for(int i = 1; i <= mat.numRows()-1; ++i){
 			for(int j = 1; j <= mat.numCols()-1; ++j){
 				if(i < _row){
@@ -309,9 +306,9 @@ T LCMinor(GeMatrix<FullStorage<T,ColMajor> > mat,int _row, int _col){
 }
 
 //template <typename T>
-//GeMatrix<FullStorage<T,ColMajor> > Inverse(GeMatrix<FullStorage<T,ColMajor> > mat){
+//flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Inverse(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 //	T det = LCDet<T>(mat);
-//	GeMatrix<FullStorage<T,ColMajor> > ret = mat;
+//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > ret = mat;
 //	for(int i = 1; i <= mat.numRows(); ++i){
 //		for(int j = 1; j <= mat.numCols(); ++j){
 //			ret(i,j) = LCMinor<T>(mat,j,i)/det;
@@ -327,19 +324,19 @@ T LCMinor(GeMatrix<FullStorage<T,ColMajor> > mat,int _row, int _col){
 
 
 template <typename T>
-GeMatrix<FullStorage<T,ColMajor> > Inverse(GeMatrix<FullStorage<T,ColMajor> > mat){
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Inverse(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 	assert(mat.numRows() == mat.numCols());
-	GeMatrix<FullStorage<T,ColMajor> > tmp = mat;
-	DenseVector<Array<int> > piv(mat.numRows());
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp = mat;
+	flens::DenseVector<flens::Array<int> > piv(mat.numRows());
 	trf(tmp,piv);
     tri(tmp,piv);
 	return tmp;	
 }
 
 template <typename T>
-GeMatrix<FullStorage<T,ColMajor> > Vec2Mat(DenseVector<Array<T> > vec,int m, int n){
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Vec2Mat(flens::DenseVector<flens::Array<T> > vec,int m, int n){
 	assert(vec.length() == m*n);
-	GeMatrix<FullStorage<T,ColMajor> > ret(m,n);
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > ret(m,n);
 	for(int i = 1;i <= m; i++){
 		for(int j = 1; j <= n; j++){
 			ret(i,j) = vec((j-1)*m+i);
@@ -349,9 +346,9 @@ GeMatrix<FullStorage<T,ColMajor> > Vec2Mat(DenseVector<Array<T> > vec,int m, int
 };
 
 template <typename T>
-GeMatrix<FullStorage<T,ColMajor> > Vec2Mat(typename DenseVector<Array<T> >::View vec,int m, int n){
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Vec2Mat(typename flens::DenseVector<flens::Array<T> >::View vec,int m, int n){
 	assert(vec.length() == m*n);
-	GeMatrix<FullStorage<T,ColMajor> > ret(m,n);
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > ret(m,n);
 	for(int i = 1;i <= m; i++){
 		for(int j = 1; j <= n; j++){
 			ret(i,j) = vec((j-1)*m+i);
@@ -361,10 +358,10 @@ GeMatrix<FullStorage<T,ColMajor> > Vec2Mat(typename DenseVector<Array<T> >::View
 };
 
 template <typename T>
-DenseVector<Array<T> > Mat2Vec(GeMatrix<FullStorage<T,ColMajor> > mat){
+flens::DenseVector<flens::Array<T> > Mat2Vec(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 	int rows = (mat.lastRow() - mat.firstRow() + 1);
 	int cols = (mat.lastCol() - mat.firstCol() + 1);
-	DenseVector<Array<T> > ret(rows*cols);
+	flens::DenseVector<flens::Array<T> > ret(rows*cols);
 	for(int i = mat.firstRow(); i <= mat.lastRow(); ++i){
 		for(int j = mat.firstCol(); j<= mat.lastCol(); ++j){
 
@@ -379,17 +376,17 @@ DenseVector<Array<T> > Mat2Vec(GeMatrix<FullStorage<T,ColMajor> > mat){
 //nicht schön dafür extrem selten:
 template <typename T>
 void
-mm(Transpose transA,
-   Transpose transB,
+mm(cxxblas::Transpose transA,
+   cxxblas::Transpose transB,
    T alpha,
-   const GeMatrix<FullStorage<T, ColMajor> > &A,
-   typename TrMatrix<FullStorage<T, ColMajor> >::ConstView &B,
+   const flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > &A,
+   typename flens::TrMatrix<flens::FullStorage<T, cxxblas::ColMajor> >::ConstView &B,
    T beta,
-   GeMatrix<FullStorage<T, ColMajor> > &C)
+   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > &C)
 {
 
-	if(B.upLo() == Upper){
-	   GeMatrix<FullStorage<T, ColMajor> > D(B.lastRow() - B.firstRow() +1 ,B.lastCol() - B.firstCol() +1);
+	if(B.upLo() == cxxblas::Upper){
+	   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(B.lastRow() - B.firstRow() +1 ,B.lastCol() - B.firstCol() +1);
 	   for(int i = B.firstRow(); i <= B.lastRow(); ++i){
 		   for(int j = B.firstCol(); j <= B.lastCol(); ++j){
 			   if(j >= i){
@@ -401,10 +398,10 @@ mm(Transpose transA,
 	   }
 		mm(transA,transB,alpha,A,D,beta,C);
 	} else {
-		GeMatrix<FullStorage<T, ColMajor> > D(B.lastRow() - B.firstRow() +1 ,B.lastCol() - B.firstCol() +1);
+		flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(B.lastRow() - B.firstRow() +1 ,B.lastCol() - B.firstCol() +1);
 	    for(int i = B.firstRow(); i <= B.lastRow(); ++i){
 		   for(int j = B.firstCol(); j <= B.lastCol(); ++j){
-			   //cout << i << " " << j << endl;	
+			   //std::cout << i << " " << j << std::endl;	
 			   if(j <= i){
 				D(i,j) = B(i,j);
 			   } else {
@@ -418,16 +415,16 @@ mm(Transpose transA,
 
 template <typename T>
 void
-mm(Transpose transA,
-   Transpose transB,
+mm(cxxblas::Transpose transA,
+   cxxblas::Transpose transB,
    T alpha,
-   typename TrMatrix<flens::FullStorage<T, ColMajor> >::ConstView &A,
-   const GeMatrix<FullStorage<T, ColMajor> > &B,
+   typename flens::TrMatrix<flens::FullStorage<T, cxxblas::ColMajor> >::ConstView &A,
+   const flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > &B,
    T beta,
-   GeMatrix<FullStorage<T, ColMajor> > &C)
+   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > &C)
 {
-   if(A.upLo() == Upper){
-	   GeMatrix<FullStorage<T, ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
+   if(A.upLo() == cxxblas::Upper){
+	   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
 	   for(int i = A.firstRow(); i <= A.lastRow(); ++i){
 		   for(int j = A.firstCol(); j <= A.lastCol(); ++j){
 			   if(j >= i){
@@ -439,7 +436,7 @@ mm(Transpose transA,
 	   }
 		mm(transA,transB,alpha,D,B,beta,C);
 	} else {
-		GeMatrix<FullStorage<T, ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
+		flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
 	    for(int i = A.firstRow(); i <= A.lastRow(); ++i){
 		   for(int j = A.firstCol(); j <= A.lastCol(); ++j){
 			   if(j <= i){
@@ -455,10 +452,10 @@ mm(Transpose transA,
 
 
 template <typename T>
-GeMatrix<FullStorage<T,ColMajor> >
-sparse2full(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > &A){
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >
+sparse2full(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > &A){
 	flens::extensions::CRS<T,flens::CRS_General> & cs = A.engine();
-	GeMatrix<FullStorage<T,ColMajor> > B(A.numRows(),A.numCols());
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > B(A.numRows(),A.numCols());
 	int j;
 	for(int i = 1; i <= A.numRows(); ++i){
 		int end;
@@ -479,9 +476,10 @@ sparse2full(SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > &A){
 };
 
 template <typename T> 
-GeMatrix<FullStorage<T,ColMajor> >
-tovector(GeMatrix<FullStorage<T,ColMajor> > & A){
-	GeMatrix<FullStorage<T,ColMajor> > B(A.numRows()*A.numCols(),1);
+flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >
+tovector(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > & A){
+    using flens::_;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > B(A.numRows()*A.numCols(),1);
 	for(int i = 1; i <= A.numCols(); ++i){
 		B(_((i-1)*A.numRows()+1,i*A.numRows()),1) = A(_,i);
 	}
@@ -491,16 +489,16 @@ tovector(GeMatrix<FullStorage<T,ColMajor> > & A){
 
 template <typename T>
 void
-mm(Transpose transA,
-   Transpose transB,
+mm(cxxblas::Transpose transA,
+   cxxblas::Transpose transB,
    T alpha,
-   typename TrMatrix<FullStorage<T, ColMajor> >::ConstView &A,
-   typename TrMatrix<FullStorage<T, ColMajor> >::ConstView &B,
+   typename flens::TrMatrix<flens::FullStorage<T, cxxblas::ColMajor> >::ConstView &A,
+   typename flens::TrMatrix<flens::FullStorage<T, cxxblas::ColMajor> >::ConstView &B,
    T beta,
-   GeMatrix<FullStorage<T, ColMajor> > &C)
+   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > &C)
 {
-   if(A.upLo() == Upper){
-	   GeMatrix<FullStorage<T, ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
+   if(A.upLo() == cxxblas::Upper){
+	   flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
 	   for(int i = A.firstRow(); i <= A.lastRow(); ++i){
 		   for(int j = A.firstCol(); j <= A.lastCol(); ++j){
 			   if(j >= i){
@@ -512,7 +510,7 @@ mm(Transpose transA,
 	   }
 		mm(transA,transB,alpha,D,B,beta,C);
 	} else {
-		GeMatrix<FullStorage<T, ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
+		flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > D(A.lastRow() - A.firstRow() +1 ,A.lastCol() - A.firstCol() +1);
 	    for(int i = A.firstRow(); i <= A.lastRow(); ++i){
 		   for(int j = A.firstCol(); j <= A.lastCol(); ++j){
 			   if(j <= i){

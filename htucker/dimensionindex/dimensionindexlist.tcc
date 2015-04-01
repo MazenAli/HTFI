@@ -1,7 +1,5 @@
 namespace htucker{
 
-using namespace std;
-
 DimensionIndexList::DimensionIndexList(){
 	list = new DimensionIndex[10];
 	size = 10;
@@ -91,11 +89,11 @@ DimensionIndexList::operator= (const DimensionIndexList & copylist){
 	return *this;
 }
 
-ostream& operator<<(ostream& Stream, const DimensionIndexList& B)
+std::ostream& operator<<(std::ostream& Stream, const DimensionIndexList& B)
 {
 		Stream << "{" ;
 		for(int i = 0; i< B.length() - 1; ++i){
-			Stream << i << ": " << B[i] << ", " << endl;
+			Stream << i << ": " << B[i] << ", " << std::endl;
 		}
 		if(B.length() > 0){
 			Stream << (B.length() - 1) << ": " << B[B.length() - 1] ;

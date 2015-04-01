@@ -6,22 +6,21 @@
 
 
 namespace flens{
-    using namespace std;
 	
     template <typename T>
-	ostream& operator<<(ostream& Stream, SparseGeMatrix<flens::extensions::CRS<T> > &B)
+	std::ostream& operator<<(std::ostream& Stream, flens::SparseGeMatrix<flens::extensions::CRS<T> > &B)
 	{
-		Stream << B.numRows() << " x " << B.numCols() << ": " <<  endl;
-		const DenseVector<Array<T> > & ref = (B.engine().values);
-		const DenseVector<Array<T> > & col = (B.engine().columns);
-		const DenseVector<Array<T> > & refrows = B.engine().rows ;
+		Stream << B.numRows() << " x " << B.numCols() << ": " <<  std::endl;
+		const flens::DenseVector<flens::Array<T> > & ref = (B.engine().values);
+		const flens::DenseVector<flens::Array<T> > & col = (B.engine().columns);
+		const flens::DenseVector<flens::Array<T> > & refrows = B.engine().rows ;
 		int j = 1;
 		for(int i = ref.firstIndex(); i <= ref.lastIndex(); ++i){
 			
 			if(j < refrows.length() && refrows(j+1) == i){
 				j = j + 1;
 			}
-			Stream << "(" << j << ", " << col(i) << ") = " << ref(i) << endl;
+			Stream << "(" << j << ", " << col(i) << ") = " << ref(i) << std::endl;
 		}
 		
 		return Stream;

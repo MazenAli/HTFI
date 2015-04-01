@@ -9,22 +9,22 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const T 
 	T alpha, beta, rNorm, rNormPrev, bNorm;
 	bNorm = b.L2norm();
 	double eps = 0.000000000001;
-	//cout << "tol = " << tol << endl;
-	//cout << " A = ";
+	//std::cout << "tol = " << tol << std::endl;
+	//std::cout << " A = ";
 	//A.print_values();
-	//cout << " x = ";
+	//std::cout << " x = ";
 	//x.print_values();
 	HTuckerTree<T> r = A*x;
-	//cout << "r = A*x = ";
+	//std::cout << "r = A*x = ";
 	//r.print_values();
 	r = reapproximate(r,eps);
-	//cout << "reapprox(r) = ";
+	//std::cout << "reapprox(r) = ";
 	//r.print_values();
 	r = b - r;
-	//cout << "r = b - r = ";
+	//std::cout << "r = b - r = ";
 	//r.print_values();
 	r = reapproximate(r,eps);
-	//cout << "reapprox(r) = ";
+	//std::cout << "reapprox(r) = ";
 	//r.print_values();
 
 	//b.print_values();
@@ -32,48 +32,48 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const T 
     HTuckerTree<T> p = r;
     rNorm = r.L2norm();
     for (long k=1; k<=maxIterations; k++) {
-		cout << " in htuckercg k = " << k << endl;
-		cout << " in htuckercg normr = " << rNorm << endl;
+		std::cout << " in htuckercg k = " << k << std::endl;
+		std::cout << " in htuckercg normr = " << rNorm << std::endl;
         
         if (rNorm/bNorm<=tol) {
             return k-1;
         }
         HTuckerTree<T> Ap = A*p;
-		//cout << "A*p = ";
+		//std::cout << "A*p = ";
 		//Ap.print_values();
 		Ap = reapproximate(Ap,eps);
-		//cout << "reapproximate(Ap) = ";
+		//std::cout << "reapproximate(Ap) = ";
 		//Ap.print_values();
 		//Ap.print_w_UorB();
-		//cout << "p = ";
+		//std::cout << "p = ";
 		//p.print_values();
 		//p.print_w_UorB();
-		//cout << "(p.ScalarProduct(Ap)) = " << (p.ScalarProduct(Ap)) << endl;
-		//cout << "rNorm*rNorm = " << rNorm*rNorm << endl;
+		//std::cout << "(p.ScalarProduct(Ap)) = " << (p.ScalarProduct(Ap)) << std::endl;
+		//std::cout << "rNorm*rNorm = " << rNorm*rNorm << std::endl;
         alpha = rNorm*rNorm/(p.ScalarProduct(Ap));
-        //cout << "alpha = " << alpha << endl;
+        //std::cout << "alpha = " << alpha << std::endl;
 		x = x + alpha*p;
-		//cout << "x = x+alpha * p = ";
+		//std::cout << "x = x+alpha * p = ";
 		//x.print_values();
 		x = reapproximate(x,eps);
-        //cout << "x = reapproximate(x) = ";
+        //std::cout << "x = reapproximate(x) = ";
 		//x.print_values(); 
 		r = r - alpha*Ap;
-		//cout << " r = r - alpha*Ap = ";
+		//std::cout << " r = r - alpha*Ap = ";
 		//r.print_values();
 		r = reapproximate(r,eps);
 		//r.print_values();
         rNormPrev = rNorm;
         
 		rNorm = r.L2norm();
-        //cout << "rNorm = " << rNorm << endl;
+        //std::cout << "rNorm = " << rNorm << std::endl;
 		beta = rNorm*rNorm/(rNormPrev*rNormPrev);
-       // cout << "beta = " << beta << endl;
+       // std::cout << "beta = " << beta << std::endl;
 		p = beta*p + r;
-		//cout << " p = beta*p + r = ";
+		//std::cout << " p = beta*p + r = ";
 		//p.print_values();
 		p = reapproximate(p,eps);
-		//cout << " p = reapproximate(p) = ";
+		//std::cout << " p = reapproximate(p) = ";
 		//p.print_values();
     }
     return maxIterations;
@@ -88,22 +88,22 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const in
 	T alpha, beta, rNorm, rNormPrev, bNorm;
 	bNorm = b.L2norm();
 	double eps = 0.000000000001;
-	//cout << "tol = " << tol << endl;
-	//cout << " A = ";
+	//std::cout << "tol = " << tol << std::endl;
+	//std::cout << " A = ";
 	//A.print_values();
-	//cout << " x = ";
+	//std::cout << " x = ";
 	//x.print_values();
 	HTuckerTree<T> r = A*x;
-	//cout << "r = A*x = ";
+	//std::cout << "r = A*x = ";
 	//r.print_values();
 	r = truncate(r,maxrank);
-	//cout << "reapprox(r) = ";
+	//std::cout << "reapprox(r) = ";
 	//r.print_values();
 	r = b - r;
-	//cout << "r = b - r = ";
+	//std::cout << "r = b - r = ";
 	//r.print_values();
 	r = truncate_nonorthogonal(r,maxrank);
-	//cout << "reapprox(r) = ";
+	//std::cout << "reapprox(r) = ";
 	//r.print_values();
 
 	//b.print_values();
@@ -111,49 +111,49 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const in
     HTuckerTree<T> p = r;
     rNorm = r.L2norm();
     for (long k=1; k<=maxIterations; k++) {
-		cout << " in htuckercg k = " << k << endl;
-		cout << " in htuckercg normr = " << rNorm << endl;
-		cout << " error " << rNorm/bNorm << std::endl;
+		std::cout << " in htuckercg k = " << k << std::endl;
+		std::cout << " in htuckercg normr = " << rNorm << std::endl;
+		std::cout << " error " << rNorm/bNorm << std::endl;
         
         if (rNorm/bNorm<=tol) {
             return k-1;
         }
         HTuckerTree<T> Ap = A*p;
-		//cout << "A*p = ";
+		//std::cout << "A*p = ";
 		//Ap.print_values();
 		Ap = truncate(Ap,maxrank);
-		//cout << "reapproximate(Ap) = ";
+		//std::cout << "reapproximate(Ap) = ";
 		//Ap.print_values();
 		//Ap.print_w_UorB();
-		//cout << "p = ";
+		//std::cout << "p = ";
 		//p.print_values();
 		//p.print_w_UorB();
-		//cout << "(p.ScalarProduct(Ap)) = " << (p.ScalarProduct(Ap)) << endl;
-		//cout << "rNorm*rNorm = " << rNorm*rNorm << endl;
+		//std::cout << "(p.ScalarProduct(Ap)) = " << (p.ScalarProduct(Ap)) << std::endl;
+		//std::cout << "rNorm*rNorm = " << rNorm*rNorm << std::endl;
         alpha = rNorm*rNorm/(p.ScalarProduct(Ap));
-        //cout << "alpha = " << alpha << endl;
+        //std::cout << "alpha = " << alpha << std::endl;
 		x = x + alpha*p;
-		//cout << "x = x+alpha * p = ";
+		//std::cout << "x = x+alpha * p = ";
 		//x.print_values();
 		x = truncate_nonorthogonal(x,maxrank);
-        //cout << "x = reapproximate(x) = ";
+        //std::cout << "x = reapproximate(x) = ";
 		//x.print_values(); 
 		r = r - alpha*Ap;
-		//cout << " r = r - alpha*Ap = ";
+		//std::cout << " r = r - alpha*Ap = ";
 		//r.print_values();
 		r = truncate_nonorthogonal(r,maxrank);
 		//r.print_values();
         rNormPrev = rNorm;
         
 		rNorm = r.L2norm();
-        //cout << "rNorm = " << rNorm << endl;
+        //std::cout << "rNorm = " << rNorm << std::endl;
 		beta = rNorm*rNorm/(rNormPrev*rNormPrev);
-       // cout << "beta = " << beta << endl;
+       // std::cout << "beta = " << beta << std::endl;
 		p = beta*p + r;
-		//cout << " p = beta*p + r = ";
+		//std::cout << " p = beta*p + r = ";
 		//p.print_values();
 		p = truncate_nonorthogonal(p,maxrank);
-		//cout << " p = reapproximate(p) = ";
+		//std::cout << " p = reapproximate(p) = ";
 		//p.print_values();
     }
     return maxIterations;
@@ -301,7 +301,7 @@ bicgstab(const HTuckerClosure<Aop,A1,A2> &A,  HTuckerTree<T> &x,const HTuckerTre
 		#endif
 		if(error < eps){
 			#ifdef SOLVER_DEBUG
-std:cout << "termination after " << k << "iterations error = " << error << std::endl;
+std:std::cout << "termination after " << k << "iterations error = " << error << std::endl;
 			#endif
 			break;
 		}
@@ -577,6 +577,7 @@ bicgstablinf(const HTuckerClosure<Aop,A1,A2> &A,  HTuckerTree<T> &x,const HTucke
 template <typename T>
 int
 gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const T tol, long maxIterations){
+    using flens::_;
 
 	double eps = tol/100.0;
     int N = 1;
@@ -588,7 +589,7 @@ gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const
 	}
 	
 	#ifdef SOLVER_DEBUG
-		std::cerr << " N = " << N << endl;
+		std::cerr << " N = " << N << std::endl;
 	#endif
 
     if (maxIterations==-1) {
@@ -601,7 +602,7 @@ gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const
 	r = reapproximate(r,eps);
 	T beta = r.L2norm();
 	#ifdef SOLVER_DEBUG
-		std::cerr << " beta = " << beta << endl;
+		std::cerr << " beta = " << beta << std::endl;
 	#endif
 
     if (beta==0.0) {
@@ -713,6 +714,7 @@ gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const
 template <typename T>
 int
 gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const int maxrank, const T tol, long maxIterations){
+    using flens::_;
 
 	double eps = tol/100.0;
     int N = 1;
@@ -724,7 +726,7 @@ gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const
 	}
 	
 	#ifdef SOLVER_DEBUG
-		std::cerr << " N = " << N << endl;
+		std::cerr << " N = " << N << std::endl;
 	#endif
 
     if (maxIterations==-1) {
@@ -737,7 +739,7 @@ gmres(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const
 	r = truncate_nonorthogonal(r,maxrank);
 	T beta = r.L2norm();
 	#ifdef SOLVER_DEBUG
-		//std::cerr << " beta = " << beta << endl;
+		//std::cerr << " beta = " << beta << std::endl;
 	#endif
 
     if (beta==0.0) {
@@ -923,6 +925,7 @@ gmresm(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, cons
 template <typename T, typename Aop, class A1, class A2>
 int
 gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const T tol, long maxIterations){
+    using flens::_;
 
 	double eps = tol/100.0;
     int N = 1;
@@ -934,7 +937,7 @@ gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T
 	}
 	
 	#ifdef SOLVER_DEBUG
-		std::cerr << " N = " << N << endl;
+		std::cerr << " N = " << N << std::endl;
 	#endif
 
     if (maxIterations==-1) {
@@ -947,7 +950,7 @@ gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T
 	r = reapproximate(r,eps);
 	T beta = r.L2norm();
 	#ifdef SOLVER_DEBUG
-		std::cerr << " beta = " << beta << endl;
+		std::cerr << " beta = " << beta << std::endl;
 	#endif
 
     if (beta==0.0) {
@@ -1060,6 +1063,7 @@ gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T
 template <typename T, typename Aop, class A1, class A2>
 int
 gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const int maxrank, const T tol, long maxIterations){
+    using flens::_;
 
 	double eps = tol/100.0;
     int N = 1;
@@ -1071,7 +1075,7 @@ gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T
 	}
 	
 	#ifdef SOLVER_DEBUG
-		std::cerr << " N = " << N << endl;
+		std::cerr << " N = " << N << std::endl;
 	#endif
 
     if (maxIterations==-1) {
@@ -1084,7 +1088,7 @@ gmres(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<T
 	r = truncate_nonorthogonal(r,maxrank);
 	T beta = r.L2norm();
 	#ifdef SOLVER_DEBUG
-		std::cerr << " beta = " << beta << endl;
+		std::cerr << " beta = " << beta << std::endl;
 	#endif
 
     if (beta==0.0) {

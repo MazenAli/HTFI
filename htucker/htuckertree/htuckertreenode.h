@@ -12,7 +12,7 @@ template <typename T>
 class HTuckerTreeNode{
 	private:
 		DimensionIndex index;
-		flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > UorB;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > UorB;
 		//flens::DenseVector<flens::Array<T> > evaluate;
 		int UorB_rcnumel, UorB_lcnumel, UorB_numel;
 
@@ -29,11 +29,11 @@ class HTuckerTreeNode{
 		const DimensionIndex &
 		getIndex() const;
 
-		const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
+		const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &
 		getUorB() const;
 
 		void 
-		setUorB(const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &_UorB);
+		setUorB(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &_UorB);
 
 		//flens::DenseVector<flens::Array<T> > & 
 		//getEvaluate() const;

@@ -1,8 +1,6 @@
 #ifndef HTUCKER_LINEARSOLVER_MAXSOLVER_H
 #define HTUCKER_LINEARSOLVER_MAXSOLVER_H 1
 
-using namespace std;
-
 namespace  htucker{
 
 	

@@ -77,8 +77,8 @@ HTuckerTree<T,EVALTYPE>::approximate(int rank){
 	for(GeneralTreeIterator<HTuckerTreeNode<T,EVALTYPE> > TIT = tree.begin(); TIT <= tree.end(); TIT++){
 		node = TIT.getNode();
 		if(!(node->isRoot())){
-			cout << "HTUCKERTREE.tcc: approximate " << node->getContent()->getIndex() << endl;
-			cout << "HTUCKERTREE.tcc: roa " << endl;
+			std::cout << "HTUCKERTREE.tcc: approximate " << node->getContent()->getIndex() << std::endl;
+			std::cout << "HTUCKERTREE.tcc: roa " << std::endl;
 			node->getContent()->getROA().print();
 			node->getContent()->getROA().approximate(rank,node->getParent()->getContent()->getROA().pivots);
 		}
@@ -93,8 +93,8 @@ HTuckerTree<T,EVALTYPE>::approximate(double epsilon){
 	for(GeneralTreeIterator<HTuckerTreeNode<T,EVALTYPE> > TIT = tree.begin(); TIT <= tree.end(); TIT++){
 		node = TIT.getNode();
 		if(!(node->isRoot())){
-			cout << "HTUCKERTREE.tcc: approximate " << node->getContent()->getIndex() << endl;
-			cout << "HTUCKERTREE.tcc: roa " << endl;
+			std::cout << "HTUCKERTREE.tcc: approximate " << node->getContent()->getIndex() << std::endl;
+			std::cout << "HTUCKERTREE.tcc: roa " << std::endl;
 			node->getContent()->getROA().print();
 			node->getContent()->getROA().approximate(epsilon,node->getParent()->getContent()->getROA().pivots);
 		}
@@ -115,8 +115,8 @@ void
 HTuckerTree<T,EVALTYPE>::print_w_UorB(){
 	tree.print();
 	for(GeneralTreeIterator<HTuckerTreeNode<T,EVALTYPE> > TIT = tree.begin(); TIT <= tree.end(); TIT++){
-		cout << "Node " << TIT.getNode()->getContent()->getIndex() << endl;
-		cout << "UorB " << TIT.getNode()->getContent()->getUorB() << endl;
+		std::cout << "Node " << TIT.getNode()->getContent()->getIndex() << std::endl;
+		std::cout << "UorB " << TIT.getNode()->getContent()->getUorB() << std::endl;
 	}
 
 };
@@ -127,17 +127,17 @@ T
 HTuckerTree<T,EVALTYPE>::evaluate(DimensionIndex index){
 	T ret = 0.0;
 	GeneralTreeNode<HTuckerTreeNode<T,EVALTYPE> > *node;
-	DenseVector<Array<T> > evaluate;
+	flens::DenseVector<flens::Array<T> > evaluate;
 	for(GeneralTreeIterator<HTuckerTreeNode<T,EVALTYPE> > TIT = tree.end(); TIT >= tree.begin(); TIT--){
 		node = TIT.getNode();
-		//cout << "htucker.tcc Evaluate at node " << node->getContent()->getIndex() << endl;
-		//cout << "htucker.tcc UorB " << node->getContent()->getUorB() << endl;
+		//std::cout << "htucker.tcc Evaluate at node " << node->getContent()->getIndex() << std::endl;
+		//std::cout << "htucker.tcc UorB " << node->getContent()->getUorB() << std::endl;
 		if(node->isRoot()){
-			evaluate = DenseVector<Array<T> >(1);
-			DenseVector<Array<T> > intermediateresult;
+			evaluate = flens::DenseVector<flens::Array<T> >(1);
+			flens::DenseVector<flens::Array<T> > intermediateresult;
 			intermediateresult =node->getContent()->getUorB() * node->getfirstChild()->getContent()->getEvaluate();
 			evaluate(1) = 0;
-			DenseVector<Array<T> > evaluate_right = node->getlastChild()->getContent()->getEvaluate();
+			flens::DenseVector<flens::Array<T> > evaluate_right = node->getlastChild()->getContent()->getEvaluate();
 			for(int j = 1; j<= intermediateresult.length(); ++j){
 				evaluate(1) += intermediateresult(j)*evaluate_right(j);
 			}
@@ -145,17 +145,17 @@ HTuckerTree<T,EVALTYPE>::evaluate(DimensionIndex index){
 		} else if(node->isLeaf()){
 			assert(node->getContent()->getIndex().length() == 1);
 			int numcols = node->getContent()->getUorB().numCols(); // in den Blättern geht das so, nicht aber in den inneren Knoten!
-			evaluate = DenseVector<Array<T> >(numcols);
+			evaluate = flens::DenseVector<flens::Array<T> >(numcols);
 			int val = index[(node->getContent()->getIndex())[0] - 1] - node->getContent()->getROA().A.minval[(node->getContent()->getIndex())[0] - 1];
 			evaluate = (node->getContent()->getUorB())(val+1,_);
 			node->getContent()->setEvaluate(evaluate);
 		} else{
 			int numblocks = node->getContent()->UorB_numel;
-			evaluate = DenseVector<Array<T> >(numblocks);
+			evaluate = flens::DenseVector<flens::Array<T> >(numblocks);
 			int lcnumel = node->getContent()->UorB_lcnumel;
 			int rcnumel = node->getContent()->UorB_rcnumel;
 
-			DenseVector<Array <T> > intermediateresult;
+			flens::DenseVector<flens::Array <T> > intermediateresult;
 			
 			for(int i= 1; i<= numblocks; ++i){
 				intermediateresult = (node->getContent()->getUorB())(_((i-1)*rcnumel + 1,i*rcnumel),_)  * node->getfirstChild()->getContent()->getEvaluate();
@@ -177,13 +177,13 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 	GeneralTreeNode<HTuckerTreeNode<T,EVALTYPE> > *node;
 	for(GeneralTreeIterator<HTuckerTreeNode<T,EVALTYPE> > TIT = tree.end(); TIT >= tree.begin(); TIT--){
 		node = TIT.getNode();
-		//cout << "node = " << node->getContent()->getIndex() << endl;
+		//std::cout << "node = " << node->getContent()->getIndex() << std::endl;
 		if(node->isLeaf()){
 			//nothing happens
 		} else {
 			//compute QR of left child
-			GeMatrix<FullStorage<T,ColMajor> > Rl,Rr, Ql,Qr;
-			DenseVector<Array<T> > taul,taur;
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Rl,Rr, Ql,Qr;
+			flens::DenseVector<flens::Array<T> > taul,taur;
 			int numRows,numCols;
 			if(node->getfirstChild()->isLeaf()){
 				Rl = node->getfirstChild()->getContent()->getUorB();
@@ -192,9 +192,9 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 				int lcnumel = node->getfirstChild()->getContent()->UorB_lcnumel;
 				int rcnumel = node->getfirstChild()->getContent()->UorB_rcnumel;
 				
-				GeMatrix<FullStorage<T,ColMajor> > Usave;
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Usave;
 				Usave = node->getfirstChild()->getContent()->getUorB();
-				Rl = GeMatrix<FullStorage<T,ColMajor> >(lcnumel * rcnumel,numel);
+				Rl = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(lcnumel * rcnumel,numel);
 				for(int i = 1; i <= lcnumel; ++i){
 					for(int j = 1; j <= numel; ++j){
 						Rl(_((i-1)*rcnumel + 1,i*rcnumel),j) = Usave(_((j-1)*rcnumel + 1,j*rcnumel),i);
@@ -217,9 +217,9 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 				int lcnumel = node->getlastChild()->getContent()->UorB_lcnumel;
 				int rcnumel = node->getlastChild()->getContent()->UorB_rcnumel;
 				
-				GeMatrix<FullStorage<T,ColMajor> > Usave;
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Usave;
 				Usave = node->getlastChild()->getContent()->getUorB();
-				Rr = GeMatrix<FullStorage<T,ColMajor> >(lcnumel * rcnumel,numel);
+				Rr = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(lcnumel * rcnumel,numel);
 				for(int i = 1; i <= lcnumel; ++i){
 					for(int j = 1; j <= numel; ++j){
 						Rr(_((i-1)*rcnumel + 1,i*rcnumel),j) = Usave(_((j-1)*rcnumel + 1,j*rcnumel),i);
@@ -241,7 +241,7 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 				int numel = node->getfirstChild()->getContent()->UorB_numel;
 				int lcnumel = node->getfirstChild()->getContent()->UorB_lcnumel;
 				int rcnumel = node->getfirstChild()->getContent()->UorB_rcnumel;
-				GeMatrix<FullStorage<T,ColMajor> > Qneu(Ql.numCols()*rcnumel,lcnumel);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Qneu(Ql.numCols()*rcnumel,lcnumel);
 				for(int i = 1; i <= Ql.numCols(); ++i){
 					for(int j = 1; j <= lcnumel; ++j){
 						Qneu(_((i-1)*rcnumel + 1, i*rcnumel),j) = Ql(_((j-1)*rcnumel +1, j*rcnumel),i);
@@ -257,7 +257,7 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 				int numel = node->getlastChild()->getContent()->UorB_numel;
 				int lcnumel = node->getlastChild()->getContent()->UorB_lcnumel;
 				int rcnumel = node->getlastChild()->getContent()->UorB_rcnumel;
-				GeMatrix<FullStorage<T,ColMajor> > Qneu(Qr.numCols()*rcnumel,lcnumel);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Qneu(Qr.numCols()*rcnumel,lcnumel);
 				for(int i = 1; i <= Qr.numCols(); ++i){
 					for(int j = 1; j <= lcnumel; ++j){
 						Qneu(_((i-1)*rcnumel + 1, i*rcnumel),j) = Qr(_((j-1)*rcnumel +1, j*rcnumel),i);
@@ -271,9 +271,9 @@ HTuckerTree<T,EVALTYPE>::orthogonalize(){
 			int numel = node->getContent()->UorB_numel;
 			int lcnumel = node->getContent()->UorB_lcnumel;
 			int rcnumel = node->getContent()->UorB_rcnumel;
-			GeMatrix<FullStorage<T,ColMajor> > Rneu(numel*Rr.numRows(),Rl.numRows());
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Rneu(numel*Rr.numRows(),Rl.numRows());
 			for(int i = 1; i<= numel; ++i){
-				GeMatrix<FullStorage<T,ColMajor> > temp1(Rr.numRows(),Rl.numRows());
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > temp1(Rr.numRows(),Rl.numRows());
 				for(int j = 1; j<= Rr.numRows(); j++){
 					for(int k = 1; k <= Rl.numRows(); ++k){
 						temp1(j,k) = 0;
@@ -302,7 +302,7 @@ template <typename T, class EVALTYPE>
 T
 HTuckerTree<T,EVALTYPE>::L2norm(){
 	T erg = ScalarProduct(*this);
-	cout << "htuckertree.tcc in L2norm: ScalarProduct: " << erg << endl;
+	std::cout << "htuckertree.tcc in L2norm: ScalarProduct: " << erg << std::endl;
 	return sqrt(erg);
 };
 
@@ -310,8 +310,8 @@ template <typename T, class EVALTYPE>
 T
 HTuckerTree<T,EVALTYPE>::L2normorthogonal(){
 	T erg;
-	/*GeMatrix<FullStorage<T,ColMajor> > U,VT;
-	DenseVector<Array<T> > s;
+	/*flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U,VT;
+	flens::DenseVector<flens::Array<T> > s;
 	svd(tree.root->getContent()->getUorB(),s,U,VT);
 	for(int i = 1; i <= s.length(); ++i){
 		erg += s(i);
@@ -338,11 +338,11 @@ HTuckerTree<T,EVALTYPE>::ScalarProduct(HTuckerTree<T, EVALTYPE> & anothertree){
 		nodethis = TITthis.getNode();
 		nodeanother = TITanother.getNode();
 		nodetmp = TITtmp.getNode();
-		//cout << nodethis->getContent()->getIndex() << endl;
+		//std::cout << nodethis->getContent()->getIndex() << std::endl;
 		if(nodethis->isLeaf()){
-			//cout << " " << nodethis->getContent()->getUorB().numRows()  << "== " <<  nodeanother->getContent()->getUorB().numRows()  << endl;
+			//std::cout << " " << nodethis->getContent()->getUorB().numRows()  << "== " <<  nodeanother->getContent()->getUorB().numRows()  << std::endl;
 			assert(nodethis->getContent()->getUorB().numRows() == nodeanother->getContent()->getUorB().numRows());
-			GeMatrix<FullStorage<T,ColMajor> > tmpM;
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmpM;
 			
 			tmpM = transpose(nodethis->getContent()->getUorB())*nodeanother->getContent()->getUorB();
 			nodetmp->getContent()->setUorB(tmpM);
@@ -354,12 +354,12 @@ HTuckerTree<T,EVALTYPE>::ScalarProduct(HTuckerTree<T, EVALTYPE> & anothertree){
 			int numcols_left = nodetmp->getfirstChild()->getContent()->getUorB().numCols();
 			int numcols_right = nodetmp->getlastChild()->getContent()->getUorB().numCols();
 			int anothernumcols = nodeanother->getContent()->getUorB().numCols();
-			GeMatrix<FullStorage<T,ColMajor> > tensorresult(nodethis->getContent()->UorB_numel,nodeanother->getContent()->UorB_numel);
-			GeMatrix<FullStorage<T,ColMajor> > intermediateresult,intermediateresult2;
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorresult(nodethis->getContent()->UorB_numel,nodeanother->getContent()->UorB_numel);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > intermediateresult,intermediateresult2;
 			for(int i = 1; i<= nodeanother->getContent()->UorB_numel;++i){
 				intermediateresult = nodetmp->getlastChild()->getContent()->getUorB() * (nodeanother->getContent()->getUorB())(_((i-1)*nodeanother->getContent()->UorB_rcnumel + 1 ,i * nodeanother->getContent()->UorB_rcnumel),_);
 				intermediateresult2 = intermediateresult * transpose(nodetmp->getfirstChild()->getContent()->getUorB());
-				DenseVector<Array<T> > rhresult(intermediateresult2.numRows() * intermediateresult2.numCols());
+				flens::DenseVector<flens::Array<T> > rhresult(intermediateresult2.numRows() * intermediateresult2.numCols());
 				for(int j = 1; j <= intermediateresult.numCols(); ++j){
 					rhresult(_((j-1)*intermediateresult2.numRows() + 1, j*intermediateresult2.numRows())) = intermediateresult2(_,j);
 				}
@@ -387,13 +387,13 @@ HTuckerTree<T,EVALTYPE>::generateTofElementary(DenseVectorList<T> list,int k,int
 		node = TIT.getNode();
 		if(node->isLeaf()){
 			int pos = (node->getContent()->getIndex())[0];
-			GeMatrix<FullStorage<T,ColMajor> > mat3((*list((pos-1)*k+1)).length(),k);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat3((*list((pos-1)*k+1)).length(),k);
 			for(int i = 1; i<= k; ++i){
 				mat3(_,i) = *list((pos-1)*k+i);
 			}
 			node->getContent()->setUorB(mat3);
 		} else if(node->isRoot()) {
-			GeMatrix<FullStorage<T,ColMajor> > mat(k,k);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat(k,k);
 			for(int i = 1; i<=k; ++i){
 				mat(i,i) = 1.0;
 			}
@@ -402,7 +402,7 @@ HTuckerTree<T,EVALTYPE>::generateTofElementary(DenseVectorList<T> list,int k,int
 			node->getContent()->UorB_rcnumel = k;
 			node->getContent()->UorB_lcnumel = k;
 		} else {
-			GeMatrix<FullStorage<T,ColMajor> > mat2(k*k,k);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat2(k*k,k);
 			for(int i = 1; i<= k; ++i){
 				mat2((i-1)*k+i,i) = 1.0;
 			}
@@ -423,7 +423,7 @@ HTuckerTree<T,EVALTYPE>::Linfnorm(HTuckerTree<T,EVALTYPE > & anothertree,Dimensi
 	T res;
 	DimensionIndex eval(minval.length());
 	for(int i = 1; i<= n; ++i){
-		cout << "i = " << i << endl;
+		std::cout << "i = " << i << std::endl;
 		eval.setRandom(minval,maxval);
 		
 		res = abs(evaluate(eval) -anothertree.evaluate(eval));
@@ -467,7 +467,7 @@ HTuckerTree<T,EVALTYPE>::Linfnorm(tensor<T> tens,DimensionIndex minval, Dimensio
 		eval.setRandom(minval,maxval);
 		if(i % 1000 == 0){
 			s1.stop();
-			cout << "Linfnorm " << i << "  time = " << s1.getTime() << endl;
+			std::cout << "Linfnorm " << i << "  time = " << s1.getTime() << std::endl;
 			s1.start();
 		}
 		res = abs(evaluate(eval) - tens(eval));
@@ -508,15 +508,15 @@ setUorB(HTuckerTree<T,SVD > & tree1){
 	for(GeneralTreeIterator<HTuckerTreeNode<double,SVD> > TIT = tree1.getGeneralTree().end(); TIT >= tree1.getGeneralTree().begin(); TIT--){
 		
 		node = TIT.getNode();
-		//cout << "htuckertree.tcc setUorB(HTuckerTree<T,SVD > & tree1), " << node->getContent()->getIndex() << endl;
+		//std::cout << "htuckertree.tcc setUorB(HTuckerTree<T,SVD > & tree1), " << node->getContent()->getIndex() << std::endl;
 		if(node->isLeaf()){
 			int minval = node->getContent()->getROA().A.minval[(node->getContent()->getIndex())[0]-1];
 			int maxval = node->getContent()->getROA().A.maxval[(node->getContent()->getIndex())[0]-1];
-			GeMatrix<FullStorage<T,ColMajor> > U(maxval - minval + 1,node->getContent()->getROA().pivots.length());
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U(maxval - minval + 1,node->getContent()->getROA().pivots.length());
 			for(int i = 0; i < node->getContent()->getROA().pivots.length(); ++i){
 				U(_,i) = node->getContent()->getROA().evaluate(node->getContent()->getROA().pivots[i],node->getContent()->getIndex(),(node->getContent()->getIndex())[0],minval,maxval);
 			}
-			GeMatrix<FullStorage<T, ColMajor> > Utilde;
+			flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > Utilde;
 			Utilde = U*transpose(node->getContent()->getROA().V);
 			node->getContent()->setUorB(Utilde);
 		} else {
@@ -532,10 +532,10 @@ setUorB(HTuckerTree<T,SVD > & tree1){
 				numel = node->getContent()->getROA().pivots.length();
 			}
 
-			GeMatrix<FullStorage<T,ColMajor> > Tinner(numel * rcnumel,lcnumel);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Tinner(numel * rcnumel,lcnumel);
 			DimensionIndex idx(tree1.getGeneralTree().root->getContent()->getIndex().length());
 			for(int i = 0; i < numel; ++i){
-				GeMatrix<FullStorage<T,ColMajor> > Amat(rcnumel,lcnumel);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Amat(rcnumel,lcnumel);
 				if(!(node->isRoot())){
 					idx = (node->getContent()->getROA().pivots)[i];
 				} 
@@ -546,19 +546,19 @@ setUorB(HTuckerTree<T,SVD > & tree1){
 						Amat(k+1,j+1) = (node->getContent()->getROA())(idx);
 					}
 				}
-				GeMatrix<FullStorage<T,ColMajor> > AU, AVT;
-				DenseVector<Array<T> > As;
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > AU, AVT;
+				flens::DenseVector<flens::Array<T> > As;
 				svd(Amat,As,AU,AVT);
-				GeMatrix<FullStorage<T,ColMajor> > O1,O2;
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > O1,O2;
 				O1 = transpose(node->getlastChild()->getContent()->getROA().U)*AU;
 				O2 = AVT*node->getfirstChild()->getContent()->getROA().U;
-				GeMatrix<FullStorage<T,ColMajor> > o1help(O1.numRows(),O1.numCols());
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > o1help(O1.numRows(),O1.numCols());
 				for(int j = 1; j <= O1.numRows(); ++j){
 					o1help(j,_) = O1(j,_)*As(j);
 				}
 				O1 = o1help * O2;
 				O2 = O1;
-				DenseVector<Array<T > > sl,sr;
+				flens::DenseVector<flens::Array<T > > sl,sr;
 				sl = node->getfirstChild()->getContent()->getROA().s;
 				sr = node->getlastChild()->getContent()->getROA().s;
 				for(int j = 1; j<= O2.numRows(); ++j){
@@ -574,9 +574,9 @@ setUorB(HTuckerTree<T,SVD > & tree1){
 			} //end for(i = 0; i < numel; ++i){
 			
 			if(!(node->isRoot())){
-				GeMatrix<FullStorage<T,ColMajor> > V;
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > V;
 				V = transpose(node->getContent()->getROA().V);
-				GeMatrix<FullStorage<T,ColMajor> > Ttilde(V.numCols() * rcnumel,lcnumel);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Ttilde(V.numCols() * rcnumel,lcnumel);
 				for(int i = 1; i<= V.numCols() * rcnumel; ++i){
 					for(int j = 1; j<= lcnumel; ++j){
 						Ttilde(i,j) = 0;
@@ -609,10 +609,10 @@ HTuckerTree<T,EVALTYPE >  operator+(HTuckerTree<T,EVALTYPE>  & tree1, HTuckerTre
 		node1 = TIT1.getNode();
 		node2 = TIT2.getNode();
 		nodetmp = TITtmp.getNode();
-		//cout << "htuckertree.tcc operator+ " << node1->getContent()->getIndex() << " " << node2->getContent()->getIndex() << " " << nodetmp->getContent()->getIndex() << endl;
+		//std::cout << "htuckertree.tcc operator+ " << node1->getContent()->getIndex() << " " << node2->getContent()->getIndex() << " " << nodetmp->getContent()->getIndex() << std::endl;
 		if(TIT1.getNode()->isLeaf()){
-			//cout << node1->getContent()->getUorB() << "  " << node2->getContent()->getUorB() << endl;
-			GeMatrix<FullStorage<double,ColMajor> > tmpM(max(node1->getContent()->getUorB().numRows(),node2->getContent()->getUorB().numRows()),node1->getContent()->getUorB().numCols()+node2->getContent()->getUorB().numCols());
+			//std::cout << node1->getContent()->getUorB() << "  " << node2->getContent()->getUorB() << std::endl;
+			flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > tmpM(max(node1->getContent()->getUorB().numRows(),node2->getContent()->getUorB().numRows()),node1->getContent()->getUorB().numCols()+node2->getContent()->getUorB().numCols());
 			tmpM(_(1,node1->getContent()->getUorB().numRows()),_(1,node1->getContent()->getUorB().numCols())) = node1->getContent()->getUorB();
 			tmpM(_(1,node2->getContent()->getUorB().numRows()),_(node1->getContent()->getUorB().numCols()+1,node1->getContent()->getUorB().numCols()+ node2->getContent()->getUorB().numCols())) = node2->getContent()->getUorB();
 			nodetmp->getContent()->setUorB(tmpM);
@@ -622,7 +622,7 @@ HTuckerTree<T,EVALTYPE >  operator+(HTuckerTree<T,EVALTYPE>  & tree1, HTuckerTre
 			int lcnumel1 = node1->getContent()->UorB_lcnumel;
 			int lcnumel2 = node2->getContent()->UorB_lcnumel;
 			// the variables numel1 and numel2 should be = 1;
-			GeMatrix<FullStorage<T,ColMajor> > UorBsum(rcnumel1+rcnumel2,lcnumel1+lcnumel2);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > UorBsum(rcnumel1+rcnumel2,lcnumel1+lcnumel2);
 			UorBsum(_(1,rcnumel1),_(1,lcnumel1)) = node1->getContent()->getUorB();
 			UorBsum(_(rcnumel1+1, rcnumel1+rcnumel2),_(lcnumel1+1,lcnumel1+lcnumel2)) = node2->getContent()->getUorB();
 			nodetmp->getContent()->setUorB(UorBsum);
@@ -637,7 +637,7 @@ HTuckerTree<T,EVALTYPE >  operator+(HTuckerTree<T,EVALTYPE>  & tree1, HTuckerTre
 			int lcnumel2 = node2->getContent()->UorB_lcnumel;
 			int numel1 = node1->getContent()->UorB_numel;
 			int numel2 = node2->getContent()->UorB_numel;
-			GeMatrix<FullStorage<T,ColMajor> > UorBsum((rcnumel1+rcnumel2)*(numel1+numel2),lcnumel1 + lcnumel2);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > UorBsum((rcnumel1+rcnumel2)*(numel1+numel2),lcnumel1 + lcnumel2);
 			for(int i = 1; i <= numel1; ++i){
 				UorBsum(_((i-1)*(numel1 + numel2) + 1,(i-1)*(numel1 + numel2) + numel1),_(1,lcnumel1)) = (node1->getContent()->getUorB())(_((i-1)*rcnumel1+1,i*rcnumel1),_);
 			}
@@ -730,7 +730,7 @@ HTuckerTree<T,EVALTYPE>::effective_rank(){
 template <typename T, class EVALTYPE>
 HTuckerTree<T,EVALTYPE>   operator*(double number, HTuckerTree<T,EVALTYPE>  & tree){
 	HTuckerTree<T,EVALTYPE>  tmp = tree;
-	GeMatrix<FullStorage<T,ColMajor> > tmpmat;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmpmat;
 	tmpmat = number * tmp.getGeneralTree().root->getContent()->getUorB();
 	tmp.getGeneralTree().root->getContent()->setUorB(tmpmat);
 	return tmp;

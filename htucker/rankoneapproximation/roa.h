@@ -22,7 +22,7 @@ class ROA{
 	public:
 		
 		tensor<TensorFunction> A;
-		flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > Atensor,U,V;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Atensor,U,V;
 		flens::DenseVector<flens::Array<T> > s,inverse_s;
 		DimensionIndexList pivots;
 		double SVD_epsilon;

@@ -161,9 +161,9 @@ namespace htucker{
 	template <typename NType>
 	bool 
 	GeneralTreeNode<NType>::removeChild(const int pos){	
-		//cout << "removeChild(" << pos << ")   level = " << this->level() << endl;
+		//std::cout << "removeChild(" << pos << ")   level = " << this->level() << std::endl;
 		if(this == NULL){ //this->firstChild
-			//cout <<  "this->firstChild == NULL" << endl;
+			//std::cout <<  "this->firstChild == NULL" << std::endl;
 			return false;
 		} else {
 			GeneralTreeNode<NType> * Ssave;
@@ -271,9 +271,9 @@ namespace htucker{
 	GeneralTreeNode<NType>::printnode() const{
 		int depth = this->level();
 		for(int i = 1; i< depth; ++i){
-			cout << "   ";
+			std::cout << "   ";
 		}
-		cout << "|-- " << this->content << endl;
+		std::cout << "|-- " << this->content << std::endl;
 		
 		if(this->firstChild != NULL){
 			GeneralTreeNode<NType> * save;

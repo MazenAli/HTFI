@@ -6,7 +6,7 @@ Matrix2Tensor::Matrix2Tensor(const Matrix2Tensor &copy):d(copy.dim()),minval(cop
 }
 
 void 
-Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &_M){
+Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &_M){
 	assert(_M.numRows() == _M.numCols());
 	//M = flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> >(_M.numRows(),_M.numCols());
 	M = &_M;
@@ -20,7 +20,7 @@ Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,flens::ColMaj
 }
 
 void 
-Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &_M, const DimensionIndex &_minidxrow, const DimensionIndex &_maxidxrow){
+Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &_M, const DimensionIndex &_minidxrow, const DimensionIndex &_maxidxrow){
 	//M = flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> >(_M.numRows(),_M.numCols());
 	M = &_M;
 	DimensionIndex coldim(minval.length());
@@ -54,7 +54,7 @@ Matrix2Tensor::getmax() const{
 	return maxval;
 }
 
-flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &
+flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &
 Matrix2Tensor::getMatrix() const{
 	return *M;
 }

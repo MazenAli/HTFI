@@ -1,8 +1,6 @@
 #ifndef HTUCKER_INDEXTOOLS_M2VINDEXCONVERTER_H
 #define HTUCKER_INDEXTOOLS_M2VINDEXCONVERTER_H 1
 
-using namespace flens;
-
 namespace htucker{
 
 	//class for the conversion of an index of a vector into a matrix index and vice versa

@@ -14,13 +14,13 @@ public:
 	double alpha, beta, Tstep;
 	int j0,J;
 	DimensionIndex cumWavNumber;
-	DenseVector<Array<double> > intensities;
+	flens::DenseVector<flens::Array<double> > intensities;
 	DimensionIndex minvals,maxvals;
 
 	HTuckerTree<double,SVD> lambda;
 	
 
-	kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _Tstep, DenseVector<Array<double> > _intensities);
+	kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _Tstep, flens::DenseVector<flens::Array<double> > _intensities);
 	
 	double operator() (DimensionIndex vals);
 };
@@ -28,11 +28,11 @@ public:
 
 class transitionintensities : public TensorFunction{
 public:
-	DenseVector<Array<double> > intensities;
+	flens::DenseVector<flens::Array<double> > intensities;
 	DimensionIndex _min, _max, _inner; //inner berschreibt den umbruchpunkt, d.h. die eindimensionale Dimension der Spalten.
 	DimensionIndex zeilendims,spaltendims,zeilendimscum,spaltendimscum; // Anzahl der Elemente pro Dimension...
 
-	transitionintensities(DenseVector<Array<double> > _intensities);
+	transitionintensities(flens::DenseVector<flens::Array<double> > _intensities);
 	
 	double operator() (DimensionIndex vals);
 };

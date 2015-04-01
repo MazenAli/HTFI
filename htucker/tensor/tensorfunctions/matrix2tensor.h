@@ -10,7 +10,7 @@ class Matrix2Tensor{
 	int d;
 	DimensionIndex minval,maxval;
 	bool matrixset;
-	flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > * M;
+	flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > * M;
 	m2vindexconverter conv;
 
 	public:
@@ -23,10 +23,10 @@ class Matrix2Tensor{
 	Matrix2Tensor(const Matrix2Tensor & copy); // hier auch noch den converter, dann copy...
 
 	void 
-	setMatrix(flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &_M);
+	setMatrix(flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &_M);
 
 	void 
-	setMatrix(flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &_M, const DimensionIndex &_minidxrow, const DimensionIndex &_maxidxrow);
+	setMatrix(flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &_M, const DimensionIndex &_minidxrow, const DimensionIndex &_maxidxrow);
 
 	double operator()(const DimensionIndex &vals) const;
 
@@ -43,7 +43,7 @@ class Matrix2Tensor{
 	void  
 	vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const;
 
-	flens::GeMatrix<flens::FullStorage<double,flens::ColMajor> > &
+	flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > &
 	getMatrix() const;
 
 	bool 

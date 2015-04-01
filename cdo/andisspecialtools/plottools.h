@@ -23,14 +23,13 @@
 #include <flens/flens.h>
 #include <lawa/lawa.h>
 
-using namespace flens;
 namespace lawa{
 
 template <typename _T, FunctionSide _Side, DomainType _Domain, Construction _Cons>
 void
-evaluate(BasisFunction<_T,_Side,_Domain,_Cons> * BF, int j, long k, unsigned short deriv, int steps, DenseVector<Array<_T> > &x){
+evaluate(BasisFunction<_T,_Side,_Domain,_Cons> * BF, int j, long k, unsigned short deriv, int steps, flens::DenseVector<flens::Array<_T> > &x){
 	assert(steps>=2);
-	DenseVector<Array<_T> > y(steps+1);
+	flens::DenseVector<flens::Array<_T> > y(steps+1);
 	Support<_T> supp = BF->support(j,k);
 	_T dist = supp.l2 - supp.l1;
 	for(int i = 1; i<= steps+1; ++i){

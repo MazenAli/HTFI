@@ -214,7 +214,7 @@ exponentialSumApproximation::getVectors() const{
 			len = maxval[i]-minval[i]+1;
 			flens::DenseVector<flens::Array<double> > tmp(len);
 			for(int l= tmp.firstIndex(); l<=tmp.lastIndex(); ++l){
-				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << endl;
+				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << std::endl;
 				frac = (minval[i]+l-tmp.firstIndex() + 0.0)/((double) len);
 				if(i == 1){
 					tmp(l) = weights(j)*exp(-frac*frac*alpha(j));

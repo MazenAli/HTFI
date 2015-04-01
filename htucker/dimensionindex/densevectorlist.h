@@ -31,7 +31,7 @@ public:
 
 	~DenseVectorList();
 
-	//appends a new DenseVector at the End of the List
+	//appends a new flens::DenseVector at the End of the List
 	void 
 		add(const flens::DenseVector<flens::Array<T> > &vector);
 
@@ -47,7 +47,7 @@ public:
 	int 
 	length() const;
 	
-	// () Operator return the DenseVector at position i of the List
+	// () Operator return the flens::DenseVector at position i of the List
 	flens::DenseVector<flens::Array<T> > * 
 	operator()(const int i);
 	

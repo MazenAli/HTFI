@@ -73,7 +73,7 @@ ROA<T, TensorFunction >::operator()(const DimensionIndex & vals) const{
 	flens::DenseVector<flens::Array<T> > savesol(pivots.length());
 	
 	savesol = flens::transpose(U)*sol;
-	//blas::mm(Trans,NoTrans,T(1),U,sol,T(0),savesol);
+	//flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,T(1),U,sol,T(0),savesol);
 	sol = flens::DenseVector<flens::Array<T> >(savesol.length());
 	for(int i = savesol.firstIndex(); i <= savesol.lastIndex(); ++i){
 		sol(i) = inverse_s(i)*savesol(i);
@@ -113,7 +113,7 @@ ROA<T, TensorFunction>::evaluate(const DimensionIndex & initialIndex, const Dime
 	
 	if(in_t){
 		//Die variable Dimension ist ein Zeilenindex
-		flens::DenseVector<Array<T> > Aright(pivots.length());
+		flens::DenseVector<flens::Array<T> > Aright(pivots.length());
 		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Aleft(_max - _min + 1, pivots.length());
 		DimensionIndex idx = initialIndex;
 		//std::cout << "pivots.length() = " << pivots.length() << "pivots = " << pivots << std::endl;
@@ -299,7 +299,7 @@ ROA<T, TensorFunction>::GreedyPivotSearch(const int lmax, const DimensionIndexLi
 	#ifdef _GREEDYDEBUG	 
 	  std::cout << "roa.tcc ROA<T>::GreedyPivotSearch, compare = " << compare << std::endl;
 	#endif
-	  DenseVector<Array<T> > values;
+	  flens::DenseVector<flens::Array<T> > values;
 	  for(int l = 1; l <= lmax; ++l){
 		 for(int i = 0; i < tjtbar.length(); ++i){
 			 values = this->evaluate(index,t,tjtbar[i],A.getmin()[tjtbar[i]-1],A.getmax()[tjtbar[i]-1]);
@@ -310,7 +310,7 @@ ROA<T, TensorFunction>::GreedyPivotSearch(const int lmax, const DimensionIndexLi
 			 if(A.vecEval()){
 				 #ifdef _GREEDYDEBUG
 					std::cout << "index = " << index << std::endl;
-					std::cout << tjtbar[i] << endl;
+					std::cout << tjtbar[i] << std::endl;
 				 #endif
 				 flens::DenseVector<flens::Array<T> > tensoreval = A.vec(index,tjtbar[i]);
 				 int pos;
@@ -321,9 +321,9 @@ ROA<T, TensorFunction>::GreedyPivotSearch(const int lmax, const DimensionIndexLi
 				 #ifdef _GREEDYDEBUG
 					std::cout << "here" << std::endl;
 					std::cout << "pos-1 + A.getmin()[tjtbar[i]-1] = " << pos-1 + A.getmin()[tjtbar[i]-1] << std::endl;
-					std::cout << pos <<endl;
-					std::cout << A.getmin() << endl;
-					std::cout << tjtbar[i] << endl;
+					std::cout << pos <<std::endl;
+					std::cout << A.getmin() << std::endl;
+					std::cout << tjtbar[i] << std::endl;
 				 #endif
 				 index[tjtbar[i]-1] = pos-1 + A.getmin()[tjtbar[i]-1];
 			 } else {

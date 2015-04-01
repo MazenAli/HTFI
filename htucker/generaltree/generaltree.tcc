@@ -92,7 +92,7 @@ GeneralTree<NType>::print() const{
 	if(root != NULL){
 		root->printnode();
 	} else {
-		cout << "empty GeneralTree" << endl;
+		std::cout << "empty GeneralTree" << std::endl;
 	}
 };
 

@@ -2,9 +2,9 @@
 
 //constructors
 template <typename T>
-ROA<T>::ROA(tensor<T> _A, DenseVector<Array<int> > _t_index,DenseVector<Array<int> > _tbar_index, int _dim): Atensor(1,1),Ainverse(1,1),UorB(1,1),A(_A), t_index(_t_index),tbar_index(_tbar_index),dim(_dim),is_evaluated(false){
-	in_t_index = DenseVector<Array<bool> >(dim);
-	in_tbar_index = DenseVector<Array<bool> >(dim);
+ROA<T>::ROA(tensor<T> _A, flens::DenseVector<flens::Array<int> > _t_index,flens::DenseVector<flens::Array<int> > _tbar_index, int _dim): Atensor(1,1),Ainverse(1,1),UorB(1,1),A(_A), t_index(_t_index),tbar_index(_tbar_index),dim(_dim),is_evaluated(false){
+	in_t_index = flens::DenseVector<flens::Array<bool> >(dim);
+	in_tbar_index = flens::DenseVector<flens::Array<bool> >(dim);
 	for(int i = 1; i <= dim ; ++i){
 		in_t_index(i) = false;
 		in_tbar_index(i) = false;
@@ -29,7 +29,7 @@ void
 ROA<T>::approximate(int rank,DenseVectorList<int> * fatherpivots){
 	double error;
 	for(int i = 1; i<=rank; ++i){
-		//GreedyPivotSearch(int dimension,tensor<T> A, ROA<T> ROAtTF, DenseVector<Array<int> > indexset, int lmax, DenseVectorListe<int> * fatherpivots){
+		//GreedyPivotSearch(int dimension,tensor<T> A, ROA<T> ROAtTF, flens::DenseVector<flens::Array<int> > indexset, int lmax, DenseVectorListe<int> * fatherpivots){
 		addpivot(GreedyPivotSearch(dim,A,*this,t_index,tbar_index,3,fatherpivots,error));
 	}
 };
@@ -38,13 +38,13 @@ template <typename T>
 void 
 ROA<T>::approximate(double epsilon,DenseVectorList<int> * fatherpivots){
 	double error;
-	DenseVector<Array<int> > greedyres;
+	flens::DenseVector<flens::Array<int> > greedyres;
 	int foundcounter = 0;
-	//cout << "Roa parameter" <<  t_index << " " << tbar_index << endl;
+	//std::cout << "Roa parameter" <<  t_index << " " << tbar_index << std::endl;
 	do{
-		//GreedyPivotSearch(int dimension,tensor<T> A, ROA<T> ROAtTF, DenseVector<Array<int> > indexset, int lmax, DenseVectorListe<int> * fatherpivots){
+		//GreedyPivotSearch(int dimension,tensor<T> A, ROA<T> ROAtTF, flens::DenseVector<flens::Array<int> > indexset, int lmax, DenseVectorListe<int> * fatherpivots){
 		greedyres = GreedyPivotSearch(dim,A,*this,t_index,tbar_index,3,fatherpivots,error);
-		cout << "in ROA<T>::approximate: " << greedyres << " " << error << " funktionswert: " << (A(greedyres) - (*this)(greedyres)) << " A(erg) = " << A(greedyres) << "  this(erg) = " << (*this)(greedyres) <<  endl;
+		std::cout << "in ROA<T>::approximate: " << greedyres << " " << error << " funktionswert: " << (A(greedyres) - (*this)(greedyres)) << " A(erg) = " << A(greedyres) << "  this(erg) = " << (*this)(greedyres) <<  std::endl;
 		if(error > epsilon){
 
 			//check if this pivot was already found:
@@ -67,7 +67,7 @@ ROA<T>::approximate(double epsilon,DenseVectorList<int> * fatherpivots){
 			if(found){
 				foundcounter += 1;
 			} else {
-				cout << "added " << endl;
+				std::cout << "added " << std::endl;
 				addpivot(greedyres);
 			}
 		}
@@ -79,16 +79,16 @@ ROA<T>::approximate(double epsilon,DenseVectorList<int> * fatherpivots){
 
 template <typename T>
 void 
-ROA<T>::addpivot(DenseVector<Array<int> > pivot){
-	DenseVector<Array<int> > ausw(in_t_index.length());
+ROA<T>::addpivot(flens::DenseVector<flens::Array<int> > pivot){
+	flens::DenseVector<flens::Array<int> > ausw(in_t_index.length());
 	this->pivots.add(pivot);
-	//cout << "Atensor resize to " << pivots.length() << endl;
-	GeMatrix<FullStorage<T,ColMajor> > mat(pivots.length(),pivots.length());
+	//std::cout << "Atensor resize to " << pivots.length() << std::endl;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat(pivots.length(),pivots.length());
 	if(pivots.length() > 1){
 		mat(_(1,pivots.length()-1),_(1,pivots.length()-1)) = Atensor;
 	}
 	//Atensor.resize(pivots.length(),pivots.length(),1,1);
-	//cout << pivot.length() << "  " << dim << endl;
+	//std::cout << pivot.length() << "  " << dim << std::endl;
 	Atensor = mat;
 	assert(pivot.length() == dim);
 	for(int i = 1; i <= pivots.length(); ++i){
@@ -118,28 +118,28 @@ ROA<T>::addpivot(DenseVector<Array<int> > pivot){
 	//boundary methode ist numerisch weniger stabil als FLENS inverse!
 
 
-	//GeMatrix<FullStorage<T,ColMajor> > invsave;
+	//flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > invsave;
 	//if(Atensor.numRows() == 1 && Atensor.numCols() == 1){
-	//	GeMatrix<FullStorage<T,ColMajor> > invsave1(1,1);
+	//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > invsave1(1,1);
 	//	invsave1(1,1) = 1/Atensor(1,1);
 	//	invsave = invsave1;
 	//} else {
 	//	T alpha = Atensor(Atensor.numRows(),Atensor.numCols());
-	//	DenseVector<Array<T> > v;
+	//	flens::DenseVector<flens::Array<T> > v;
 	//	v = Atensor(_(1,Atensor.numRows()-1),Atensor.numCols());
-	//	DenseVector<Array<T> > u;
-	//	//cout << "here1" << endl;
+	//	flens::DenseVector<flens::Array<T> > u;
+	//	//std::cout << "here1" << std::endl;
 	//	u = Atensor(Atensor.numRows(),_(1,Atensor.numCols()-1));
-	//	DenseVector<Array<T> > vbar = Ainverse*v;
-	//	DenseVector<Array<T> > ubar = transpose(Ainverse)*u;
+	//	flens::DenseVector<flens::Array<T> > vbar = Ainverse*v;
+	//	flens::DenseVector<flens::Array<T> > ubar = transpose(Ainverse)*u;
 	//	
 	//	double scalar = alpha - u*vbar;
 	//	
-	//	GeMatrix<FullStorage<T,ColMajor> > newinv(Atensor.numRows(),Atensor.numCols());
-	//	//cout << "vor schleife: " << endl;
+	//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newinv(Atensor.numRows(),Atensor.numCols());
+	//	//std::cout << "vor schleife: " << std::endl;
 	//	for(int i = newinv.firstRow(); i<= newinv.lastRow(); ++i){
 	//		for(int j = newinv.firstCol(); j <= newinv.lastCol(); ++j){
-	//			//cout << "i= " << i << " j = " << j << endl;
+	//			//std::cout << "i= " << i << " j = " << j << std::endl;
 	//			if(i< newinv.lastRow() && j < newinv.lastCol()){
 	//				newinv(i,j) = Ainverse(i,j) + (vbar(i)*ubar(j))/scalar;
 	//			} else if (i< newinv.lastRow() && j == newinv.lastCol()){
@@ -153,7 +153,7 @@ ROA<T>::addpivot(DenseVector<Array<int> > pivot){
 	//	}
 	//	invsave = newinv;
 	//}
-	//cout << "new inverse: " << invsave << endl;
+	//std::cout << "new inverse: " << invsave << std::endl;
 	//Ainverse = invsave;
 	
 	//Ainverse ist auch nicht so gut, zumindest sobald die Anzahl der Pivots wächst..
@@ -162,28 +162,28 @@ ROA<T>::addpivot(DenseVector<Array<int> > pivot){
 	//Versuchen wir die QR-Zerlegung zu berechnen und damit zu lösen..
 	
 	Ainverse = Atensor;
-	DenseVector<Array<T> > save;
+	flens::DenseVector<flens::Array<T> > save;
 	qrf(Ainverse,save);
 	tau = save;
 
 
-	//cout << Ainverse << endl;
-	//cout << "Det : " << Det(Atensor) << endl;
-	//cout << "Atensor " << Atensor << endl;
-	//cout << "old inverse: " << Ainverse << endl;
+	//std::cout << Ainverse << std::endl;
+	//std::cout << "Det : " << Det(Atensor) << std::endl;
+	//std::cout << "Atensor " << Atensor << std::endl;
+	//std::cout << "old inverse: " << Ainverse << std::endl;
 	
 };
 
 //template <typename T>
 //T 
-//ROA<T>::operator()(DenseVector<Array<int> > vals){
+//ROA<T>::operator()(flens::DenseVector<flens::Array<int> > vals){
 //	if(pivots.length() == 0) return 0;
 //	assert(vals.length() == dim);
 //	T sum = 0;
-//	//cout << "val = " << vals << endl;
-//	GeMatrix<FullStorage<T,ColMajor> > sol(pivots.length(),1); //first hat die spaltenindizes aus dem pivot, last die zeilenindizes
-//	DenseVector<Array<int> > idx(in_t_index.length());
-//	//DenseVector<Array<T> > solution;
+//	//std::cout << "val = " << vals << std::endl;
+//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > sol(pivots.length(),1); //first hat die spaltenindizes aus dem pivot, last die zeilenindizes
+//	flens::DenseVector<flens::Array<int> > idx(in_t_index.length());
+//	//flens::DenseVector<flens::Array<T> > solution;
 //	for(int i = 1; i <= pivots.length(); ++i){
 //		for(int j = 1; j <= in_t_index.length(); ++j){
 //			if(in_t_index(j)){
@@ -192,21 +192,21 @@ ROA<T>::addpivot(DenseVector<Array<int> > pivot){
 //				idx(j) = vals(j);
 //			}
 //		}
-//		//cout << "idx = " << idx << endl;
+//		//std::cout << "idx = " << idx << std::endl;
 //	
 //		sol(i,1) = A(idx);
 //	}
-//	//cout << "sol = " << sol << endl;
-//	GeMatrix<FullStorage<T,ColMajor> > savesol = sol;
+//	//std::cout << "sol = " << sol << std::endl;
+//	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > savesol = sol;
 //	
-//	ormqr(Left,Trans,Ainverse,tau,sol);
-//	trsm(Left,NoTrans,1.,Ainverse.upper(),sol);
+//	ormqr(cxxblas::Left,cxxblas::Trans,Ainverse,tau,sol);
+//	trsm(cxxblas::Left,cxxblas::NoTrans,1.,Ainverse.upper(),sol);
 //
-//	//GeMatrix<FullStorage<T,ColMajor> > refsol;
+//	//flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > refsol;
 //	//refsol = Atensor*sol;
-//	//cout << "in ROA<T>() vals: " << vals << endl;
-//	//cout << "savesol = " << savesol << endl;
-//	//cout << "refsol = " << refsol << endl;
+//	//std::cout << "in ROA<T>() vals: " << vals << std::endl;
+//	//std::cout << "savesol = " << savesol << std::endl;
+//	//std::cout << "refsol = " << refsol << std::endl;
 //	
 //	for(int i = 1; i <= sol.numRows(); ++i){
 //		for(int j = 1; j <= in_t_index.length(); ++j){
@@ -224,10 +224,10 @@ ROA<T>::addpivot(DenseVector<Array<int> > pivot){
 
 template <typename T>
 T 
-ROA<T>::operator()(DenseVector<Array<int> > vals){
+ROA<T>::operator()(flens::DenseVector<flens::Array<int> > vals){
 	if(pivots.length() == 0) return 0;
 	assert(vals.length() == dim);
-	GeMatrix<FullStorage<T,ColMajor> > res = RankOneApprox(A,*this,vals,1,vals(1),vals(1));
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > res = RankOneApprox(A,*this,vals,1,vals(1),vals(1));
 	return res(1,2);
 };
 
@@ -238,7 +238,7 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 		//here we should have only one dimension in the t-index, otherwise it is not a leaf.
 		assert(t_index.length() == 1);
 		UorB.resize(A.maxval(t_index(1)) - A.minval(t_index(1))+1,pivots.length() ,1,1);
-		DenseVector<Array<int> > idx(in_t_index.length());
+		flens::DenseVector<flens::Array<int> > idx(in_t_index.length());
 		for(int i = 1; i <= A.maxval(t_index(1)) - A.minval(t_index(1))+1; i++){
 			for(int j = 1; j <= pivots.length(); ++j){
 				for(int k = 1; k <= in_t_index.length(); ++k){
@@ -248,21 +248,21 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 						idx(k) = (*pivots(j))(k);
 					}
 				}
-				//cout << idx << endl;
+				//std::cout << idx << std::endl;
 				UorB(i,j) = (*this)(idx);
 			}
 		}
 	} else if (type == 1){
 		assert(t_index.length() > 1);
 	
-		DenseVector<Array<T> > tensorprod;
-		GeMatrix<FullStorage<T,ColMajor> > tensorres;
-		GeMatrix<FullStorage<T,ColMajor> > tensorres2;
-		DenseVector<Array<int> > idx(in_t_index.length());
+		flens::DenseVector<flens::Array<T> > tensorprod;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorres;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorres2;
+		flens::DenseVector<flens::Array<int> > idx(in_t_index.length());
 
 		UorB.resize(leftchild.pivots.length()*rightchild.pivots.length(),1,1,1);
 		for(int i = 1; i <= 1; ++i){
-			DenseVector<Array<T> > input(leftchild.pivots.length()*rightchild.pivots.length());
+			flens::DenseVector<flens::Array<T> > input(leftchild.pivots.length()*rightchild.pivots.length());
 			for(int j = 1; j <= leftchild.pivots.length(); ++j){
 				for(int k = 1; k <= rightchild.pivots.length(); ++k){
 					for(int l = 1; l <= in_t_index.length(); ++l){
@@ -275,19 +275,19 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 						}
 				
 					}
-					//cout << leftchild.in_t_index << endl;
-					//cout << rightchild.in_t_index << endl;
-					//cout << idx << endl;
+					//std::cout << leftchild.in_t_index << std::endl;
+					//std::cout << rightchild.in_t_index << std::endl;
+					//std::cout << idx << std::endl;
 					input((j-1)*rightchild.pivots.length() + k) = A(idx);
 				}
 			}
 			//tensorres = rightchild. * Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length());
 			tensorres = Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length());
-			ormqr(Left,Trans,rightchild.Ainverse,rightchild.tau,tensorres);
-			trsm(Left,NoTrans,1.,rightchild.Ainverse.upper(),tensorres);
+			ormqr(cxxblas::Left,cxxblas::Trans,rightchild.Ainverse,rightchild.tau,tensorres);
+			trsm(cxxblas::Left,cxxblas::NoTrans,1.,rightchild.Ainverse.upper(),tensorres);
 			tensorres2 = transpose(tensorres);
-			ormqr(Left,Trans,leftchild.Ainverse,leftchild.tau,tensorres2);
-			trsm(Left,NoTrans,1.0,leftchild.Ainverse.upper(),tensorres2);
+			ormqr(cxxblas::Left,cxxblas::Trans,leftchild.Ainverse,leftchild.tau,tensorres2);
+			trsm(cxxblas::Left,cxxblas::NoTrans,1.0,leftchild.Ainverse.upper(),tensorres2);
 			tensorres = transpose(tensorres2);
 			//tensorres2 = tensorres * transpose(leftchild.Ainverse);
 			tensorprod = Mat2Vec(tensorres);
@@ -300,15 +300,15 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 	} else {
 		assert(t_index.length() > 1);
 	
-		DenseVector<Array<T> > tensorprod;
-		GeMatrix<FullStorage<T,ColMajor> > tensorres;
-		GeMatrix<FullStorage<T,ColMajor> > tensorres2;
+		flens::DenseVector<flens::Array<T> > tensorprod;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorres;
+		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorres2;
 		
-		DenseVector<Array<int> > idx(in_t_index.length());
+		flens::DenseVector<flens::Array<int> > idx(in_t_index.length());
 
 		UorB.resize(leftchild.pivots.length()*rightchild.pivots.length(),pivots.length(),1,1);
 		for(int i = 1; i <= pivots.length(); ++i){
-			DenseVector<Array<T> > input(leftchild.pivots.length()*rightchild.pivots.length());
+			flens::DenseVector<flens::Array<T> > input(leftchild.pivots.length()*rightchild.pivots.length());
 			for(int j = 1; j <= leftchild.pivots.length(); ++j){
 				for(int k = 1; k <= rightchild.pivots.length(); ++k){
 					for(int l = 1; l <= in_t_index.length(); ++l){
@@ -321,26 +321,26 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 						}
 				
 					}
-					//cout << leftchild.in_t_index << endl;
-					//cout << rightchild.in_t_index << endl;
-					//cout << idx << endl;
+					//std::cout << leftchild.in_t_index << std::endl;
+					//std::cout << rightchild.in_t_index << std::endl;
+					//std::cout << idx << std::endl;
 					input((j-1)*rightchild.pivots.length() + k) = (*this)(idx);
 				}
 			}
-			//cout << "childinverse: " << rightchild.Ainverse << endl;
-			//cout << "spalte von A in B: " << input << endl;
-			//cout << "vec2mat : " <<  Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length()) << endl;
+			//std::cout << "childinverse: " << rightchild.Ainverse << std::endl;
+			//std::cout << "spalte von A in B: " << input << std::endl;
+			//std::cout << "vec2mat : " <<  Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length()) << std::endl;
 			tensorres = Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length());
-			ormqr(Left,Trans,rightchild.Ainverse,rightchild.tau,tensorres);
-			trsm(Left,NoTrans,1.,rightchild.Ainverse.upper(),tensorres);
+			ormqr(cxxblas::Left,cxxblas::Trans,rightchild.Ainverse,rightchild.tau,tensorres);
+			trsm(cxxblas::Left,cxxblas::NoTrans,1.,rightchild.Ainverse.upper(),tensorres);
 			//tensorres = rightchild.Ainverse * Vec2Mat(input,rightchild.pivots.length(),leftchild.pivots.length());
 			tensorres2 = transpose(tensorres);
-			ormqr(Left,Trans,leftchild.Ainverse,leftchild.tau,tensorres2);
-			trsm(Left,NoTrans,1.0,leftchild.Ainverse.upper(),tensorres2);
+			ormqr(cxxblas::Left,cxxblas::Trans,leftchild.Ainverse,leftchild.tau,tensorres2);
+			trsm(cxxblas::Left,cxxblas::NoTrans,1.0,leftchild.Ainverse.upper(),tensorres2);
 			tensorres = transpose(tensorres2);
 			//tensorres2 = tensorres * transpose(leftchild.Ainverse);
-			//cout << "tensorres1: " << tensorres2 << endl;
-			//cout << "tensorres2: " << tensorres2 << endl;
+			//std::cout << "tensorres1: " << tensorres2 << std::endl;
+			//std::cout << "tensorres2: " << tensorres2 << std::endl;
 			tensorprod = Mat2Vec(tensorres);
 			for(int j = tensorprod.firstIndex(); j <= tensorprod.lastIndex(); ++j){
 				UorB(j,i) = tensorprod(j);  // Spaltenweise eintragen... fertig!
@@ -352,10 +352,10 @@ ROA<T>::setUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild){
 };
 
 template <typename T> 
-void ROA<T>::evaluateUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild, DenseVector<Array<int> > index){
+void ROA<T>::evaluateUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild, flens::DenseVector<flens::Array<int> > index){
 	if(type == 3){
-		//cout << "3: " << UorB.numCols() << endl;
-		evaluate = DenseVector<Array<T> >(UorB.numCols());
+		//std::cout << "3: " << UorB.numCols() << std::endl;
+		evaluate = flens::DenseVector<flens::Array<T> >(UorB.numCols());
 		int val = 0;
 		for(int i = in_t_index.firstIndex(); i <= in_t_index.lastIndex(); ++i){
 			if(in_t_index(i)){
@@ -367,18 +367,18 @@ void ROA<T>::evaluateUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild, DenseVe
 		}
 		is_evaluated = true;
 	} else if(type == 1) {
-		evaluate = DenseVector<Array<T> >(1);
-		//cout << "Here1" << endl;
-		DenseVector<Array <T> > bpart(leftchild.UorB.numCols()*rightchild.UorB.numCols());
-		DenseVector<Array <T> > intermediateresult;
-		//cout << UorB.numRows() << " " << UorB.numCols() << endl;
+		evaluate = flens::DenseVector<flens::Array<T> >(1);
+		//std::cout << "Here1" << std::endl;
+		flens::DenseVector<flens::Array <T> > bpart(leftchild.UorB.numCols()*rightchild.UorB.numCols());
+		flens::DenseVector<flens::Array <T> > intermediateresult;
+		//std::cout << UorB.numRows() << " " << UorB.numCols() << std::endl;
 		for(int i= 1; i<= 1; ++i){
 			for(int j = 1; j<=leftchild.UorB.numCols()*rightchild.UorB.numCols() ; j++){
 				bpart(j) = UorB(j,i);
 			}
-			//cout << "Here2" << endl;
+			//std::cout << "Here2" << std::endl;
 			intermediateresult = Vec2Mat(bpart,rightchild.UorB.numCols(),leftchild.UorB.numCols())*leftchild.evaluate;
-			//cout << "Here4" << endl;
+			//std::cout << "Here4" << std::endl;
 			evaluate(i) = 0;
 			for(int j = 1; j<= rightchild.UorB.numCols(); ++j){
 				evaluate(i) += intermediateresult(j)*rightchild.evaluate(j);
@@ -387,9 +387,9 @@ void ROA<T>::evaluateUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild, DenseVe
 		}
 		is_evaluated = true;
 	} else {
-		evaluate = DenseVector<Array<T> >(UorB.numCols());
-		DenseVector<Array <T> > bpart(leftchild.UorB.numCols()*rightchild.UorB.numCols());
-		DenseVector<Array <T> > intermediateresult;
+		evaluate = flens::DenseVector<flens::Array<T> >(UorB.numCols());
+		flens::DenseVector<flens::Array <T> > bpart(leftchild.UorB.numCols()*rightchild.UorB.numCols());
+		flens::DenseVector<flens::Array <T> > intermediateresult;
 		
 		for(int i= 1; i<= UorB.numCols(); ++i){
 			for(int j = 1; j<=leftchild.UorB.numCols()*rightchild.UorB.numCols() ; j++){
@@ -407,12 +407,12 @@ void ROA<T>::evaluateUorB(int type,ROA<T> &leftchild,ROA<T> &rightchild, DenseVe
 };
 
 template <typename T>
-ostream& operator<<(ostream& Stream, ROA<T>& roa)
+std::ostream& operator<<(std::ostream& Stream, ROA<T>& roa)
 {
-	ostream& St = Stream;
-	 St << "# of Pivots: " << roa.pivots.length() << endl;
+	std::ostream& St = Stream;
+	 St << "# of Pivots: " << roa.pivots.length() << std::endl;
 	 for(int i = 1; i <= roa.pivots.length(); ++i){
-		 St << i << ": " << *(roa.pivots(i)) << endl;
+		 St << i << ": " << *(roa.pivots(i)) << std::endl;
 	 }
 	return St;
 };

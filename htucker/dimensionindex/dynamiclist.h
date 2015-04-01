@@ -4,7 +4,6 @@
 #include <iostream>
 
 namespace htucker{
-    using namespace std;
 
 template <typename T>
 class dynamiclistelement{

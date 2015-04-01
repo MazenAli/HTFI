@@ -27,14 +27,14 @@ HTuckerTreeNode<T>::getIndex() const{
 };
 
 template <typename T>
-const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &
+const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &
 HTuckerTreeNode<T>::getUorB() const{
 	return UorB;
 };
 
 template <typename T>
 void 
-HTuckerTreeNode<T>::setUorB(const flens::GeMatrix<flens::FullStorage<T,flens::ColMajor> > &_UorB){
+HTuckerTreeNode<T>::setUorB(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &_UorB){
 	//std::cout << "_UorB " << _UorB <<  std::endl;
 	UorB = _UorB;
 	//std::cout << "UorB copy " << UorB << std::endl;
@@ -96,7 +96,7 @@ HTuckerTreeNode<T>::setRightChildNumRows(const int rcnumel){
 }
 
 template <typename T>
-ostream& operator<<(ostream& Stream, const HTuckerTreeNode<T> & B)
+std::ostream& operator<<(std::ostream& Stream, const HTuckerTreeNode<T> & B)
 {
 	Stream << B.getIndex();
 	return Stream;

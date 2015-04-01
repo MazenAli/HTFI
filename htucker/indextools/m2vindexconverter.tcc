@@ -9,9 +9,9 @@ void
 m2vindexconverter::getMatrixIndices(const DimensionIndex &vals, DimensionIndex & row, DimensionIndex & column) const{
 	DimensionIndex r(vals.length());
 	DimensionIndex c(vals.length());
-	//cout << minidx << endl;
+	//std::cout << minidx << std::endl;
 
-	//cout << maxidx << endl;
+	//std::cout << maxidx << std::endl;
 	if(!rowinfo){
 		for(int i = 0; i < vals.length(); ++i){
 			c[i] = floor((vals[i] - minidx[i]+0.0)/(maxidx[i]-minidx[i]+1.0)) + minidx[i];

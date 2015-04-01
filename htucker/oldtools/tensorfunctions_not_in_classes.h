@@ -29,7 +29,7 @@ double decimal(DimensionIndex para){
 
 	
 void  getVecsexpsumApproximation(DenseVectorList<double> & list,int d,DimensionIndex minvec, DimensionIndex maxvec){
-	DenseVector<Array<double> > weights(40);
+	flens::DenseVector<flens::Array<double> > weights(40);
 	weights =  0.0004541105141216453968248119678948609979,
 			   0.0078530680104171971521949987930788505963,
 			 0.0358442951018547386594730302239453223478,
@@ -70,7 +70,7 @@ void  getVecsexpsumApproximation(DenseVectorList<double> & list,int d,DimensionI
 			 0.0000007873796897325934882231604846542004,
 			 0.0000003186056947254193096300954077315363,
 			 0.0000001024294180134919968361669149146366;
-	DenseVector<Array<double> > alpha(40);
+	flens::DenseVector<flens::Array<double> > alpha(40);
 	alpha = 0.0328758165954420368502493336737568796480,
 			 0.0570473982762439551973880462465427143570,
 			 0.0966283152617544954693135257628444634292,
@@ -115,9 +115,9 @@ void  getVecsexpsumApproximation(DenseVectorList<double> & list,int d,DimensionI
 	
 				for(int i = 0; i< d; i++){
 					for(int j = 1; j<= 40; j++){
-						DenseVector<Array<double> > tmp(maxvec[i]-minvec[i]+1);
+						flens::DenseVector<flens::Array<double> > tmp(maxvec[i]-minvec[i]+1);
 						for(int l= tmp.firstIndex(); l<=tmp.lastIndex(); ++l){
-							//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << endl;
+							//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << std::endl;
 							if(i == 1){
 								tmp(l) = weights(j)*exp(-((minvec[i]+l-tmp.firstIndex())/(maxvec[i]-minvec[i]+1.0))*((minvec[i]+l-tmp.firstIndex())/(maxvec[i]-minvec[i]+1.0))*alpha(j));
 							} else {
@@ -135,7 +135,7 @@ void  getVecsexpsumApproximation(DenseVectorList<double> & list,int d,DimensionI
 
 void getVecsinverseNormApproximation(DenseVectorList<double> & list,int d,DimensionIndex minvec, DimensionIndex maxvec){
 	assert(d == minvec.length() && d == maxvec.length());
-	DenseVector<Array<double> > weights(35);
+	flens::DenseVector<flens::Array<double> > weights(35);
 	weights =  0.0003476617162031463656887349288667626857,
 		 0.0003656677800731512040516686207159910427,
 		 0.0004075639038080694722811763840587123697,
@@ -171,7 +171,7 @@ void getVecsinverseNormApproximation(DenseVectorList<double> & list,int d,Dimens
 		 0.4747822440254026090267897020069653990504,
 		 0.6124014951064692475124137671649293679366,
 		 0.8770631816903148868821808725737554368607;
-	DenseVector<Array<double> > alpha(35);
+	flens::DenseVector<flens::Array<double> > alpha(35);
 	alpha = 0.0000000235400856956305055878655722424688,
 		 0.0000002190687866559873968066208739485593 ,
 		 0.0000006537664626626933778312767948510514,
@@ -210,9 +210,9 @@ void getVecsinverseNormApproximation(DenseVectorList<double> & list,int d,Dimens
 		
 	for(int i = 0; i< d; i++){
 		for(int j = 1; j<= 35; j++){
-			DenseVector<Array<double> > tmp(maxvec[i]-minvec[i]+1);
+			flens::DenseVector<flens::Array<double> > tmp(maxvec[i]-minvec[i]+1);
 			for(int l= tmp.firstIndex(); l<=tmp.lastIndex(); ++l){
-				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << endl;
+				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << std::endl;
 				if(i == 1){
 					tmp(l) = weights(j)*exp(-(minvec[i]+l-tmp.firstIndex())*(minvec[i]+l-tmp.firstIndex())*alpha(j));
 				} else {
@@ -232,7 +232,7 @@ void getVecsinverseNormApproximation(DenseVectorList<double> & list,int d,Dimens
 
 
 double expsumApproximation(DimensionIndex list,DimensionIndex number_per_dim){
-	DenseVector<Array<double> > weights(40);
+	flens::DenseVector<flens::Array<double> > weights(40);
 	weights =  0.0004541105141216453968248119678948609979,
 			   0.0078530680104171971521949987930788505963,
 			 0.0358442951018547386594730302239453223478,
@@ -273,7 +273,7 @@ double expsumApproximation(DimensionIndex list,DimensionIndex number_per_dim){
 			 0.0000007873796897325934882231604846542004,
 			 0.0000003186056947254193096300954077315363,
 			 0.0000001024294180134919968361669149146366;
-	DenseVector<Array<double> > alpha(40);
+	flens::DenseVector<flens::Array<double> > alpha(40);
 	alpha = 0.0328758165954420368502493336737568796480,
 			 0.0570473982762439551973880462465427143570,
 			 0.0966283152617544954693135257628444634292,
@@ -408,7 +408,7 @@ double expsum_256(DimensionIndex list){
 };
 
 double inverseNormApproximation(DimensionIndex list){
-DenseVector<Array<double> > weights(35);
+flens::DenseVector<flens::Array<double> > weights(35);
 	weights =  0.0003476617162031463656887349288667626857,
 		 0.0003656677800731512040516686207159910427,
 		 0.0004075639038080694722811763840587123697,
@@ -444,7 +444,7 @@ DenseVector<Array<double> > weights(35);
 		 0.4747822440254026090267897020069653990504,
 		 0.6124014951064692475124137671649293679366,
 		 0.8770631816903148868821808725737554368607;
-	DenseVector<Array<double> > alpha(35);
+	flens::DenseVector<flens::Array<double> > alpha(35);
 	alpha = 0.0000000235400856956305055878655722424688,
 		 0.0000002190687866559873968066208739485593 ,
 		 0.0000006537664626626933778312767948510514,

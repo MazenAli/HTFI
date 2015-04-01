@@ -1,7 +1,7 @@
 
 namespace lawa{
 
-kscdomatrix::kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _Tstep, DenseVector<Array<double> > _intensities):alpha(_alpha), beta(_beta), Tstep(_Tstep),j0(_j0), J(_J),intensities(_intensities),cumWavNumber(_J-_j0+1){
+kscdomatrix::kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _Tstep, flens::DenseVector<flens::Array<double> > _intensities):alpha(_alpha), beta(_beta), Tstep(_Tstep),j0(_j0), J(_J),intensities(_intensities),cumWavNumber(_J-_j0+1){
 	transitionintensities ti(intensities);
 	double eps = 0.000000001;
 	tensor<double> lambdatens(ti,intensities.length(),0,3);
@@ -15,13 +15,13 @@ kscdomatrix::kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _T
 
 	for(GeneralTreeIterator<HTuckerTreeNode<double,SVD> > TIT1 = ones.getGeneralTree().end(); TIT1 >= ones.getGeneralTree().begin();TIT1--){
 		if(TIT1.getNode()->isLeaf()){
-			GeMatrix<FullStorage<double,ColMajor> > tmp(2,1);
+			flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > tmp(2,1);
 			tmp = 1,
 				  1;
 			TIT1.getNode()->getContent()->setUorB(tmp);
 			TIT1.getNode()->getContent()->UorB_numel = 1;
 		} else {
-			GeMatrix<FullStorage<double,ColMajor> > tmp(1,1);
+			flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > tmp(1,1);
 			tmp = 1.0;
 			TIT1.getNode()->getContent()->setUorB(tmp);
 			TIT1.getNode()->getContent()->UorB_numel = 1;
@@ -52,15 +52,15 @@ kscdomatrix::kscdomatrix(int _j0, int _J, double _alpha, double _beta, double _T
 	maxvals = maxlambda.join(maxmw);
 	minvals = minlambda.join(minmw);
 	
-	cout << "N = " << N << endl;
-	cout << "maxmw = "  << maxmw << endl;
-	cout << " maxvals " << maxvals << endl;
+	std::cout << "N = " << N << std::endl;
+	std::cout << "maxmw = "  << maxmw << std::endl;
+	std::cout << " maxvals " << maxvals << std::endl;
 	
 	for(int i = j0; i <= J; ++i){
 		cumWavNumber[i-j0] = mwbasis.mra.cardI(i);
 	}
 
-	cout << "cumWavNumber = " << cumWavNumber << endl;
+	std::cout << "cumWavNumber = " << cumWavNumber << std::endl;
 
 
 }
@@ -85,8 +85,8 @@ kscdomatrix::operator() (DimensionIndex vals){
 		zeilewav[i] = wav[i]-minvals[intensities.length()+i] - (spaltewav[i] - minvals[intensities.length()])*(maxvals[intensities.length()]-minvals[intensities.length()]+1);
 	}
 	
-	cout << spaltewav << endl;
-	cout << zeilewav << endl;
+	std::cout << spaltewav << std::endl;
+	std::cout << zeilewav << std::endl;
 	
 	int zeilewert = 0;
 	int spaltewert = 0;
@@ -152,11 +152,11 @@ kscdomatrix::operator() (DimensionIndex vals){
 
 
 
-transitionintensities::transitionintensities(DenseVector<Array<double> > _intensities): intensities(_intensities),_min(DimensionIndex(_intensities.length())),_max(DimensionIndex(_intensities.length())),_inner(DimensionIndex(_intensities.length())),zeilendims(DimensionIndex(_intensities.length())),spaltendims(DimensionIndex(_intensities.length())),zeilendimscum(DimensionIndex(_intensities.length())),spaltendimscum(DimensionIndex(_intensities.length())){
+transitionintensities::transitionintensities(flens::DenseVector<flens::Array<double> > _intensities): intensities(_intensities),_min(DimensionIndex(_intensities.length())),_max(DimensionIndex(_intensities.length())),_inner(DimensionIndex(_intensities.length())),zeilendims(DimensionIndex(_intensities.length())),spaltendims(DimensionIndex(_intensities.length())),zeilendimscum(DimensionIndex(_intensities.length())),spaltendimscum(DimensionIndex(_intensities.length())){
 	int prod = 1;
-	//cout << "here " << endl;
+	//std::cout << "here " << std::endl;
 	for(int i = 1; i <= intensities.length(); ++i){
-		//cerr << " i = " << i << endl;
+		//cerr << " i = " << i << std::endl;
 		_min[i-1] = 0;
 		_max[i-1] = 3;
 		_inner[i-1] = sqrt(_max[i-1] - _min[i-1] + 1.0)+_min[i-1]-1;
@@ -200,11 +200,11 @@ transitionintensities::operator ()(lawa::DimensionIndex vals){
 
 transitionmatrix::transitionmatrix(HTuckerTree<double,SVD> &_t1, HTuckerTree<double,SVD> &_t2): t1(_t1),t2(_t2),_min(DimensionIndex(_t1.dim())),_max(DimensionIndex(_t1.dim())),_inner(DimensionIndex(_t1.dim())),zeilendims(DimensionIndex(_t1.dim())),spaltendims(DimensionIndex(_t1.dim())),zeilendimscum(DimensionIndex(_t1.dim())),spaltendimscum(DimensionIndex(_t1.dim())){
 	int prod = 1;
-	//cout << "here " << endl;
-	cout << t1.dim() << endl;
+	//std::cout << "here " << std::endl;
+	std::cout << t1.dim() << std::endl;
 	t1.print_w_UorB();
 	for(int i = 1; i <= t1.dim(); ++i){
-		//cerr << " i = " << i << endl;
+		//cerr << " i = " << i << std::endl;
 		_min[i-1] = 0;
 		_max[i-1] = 3;
 		_inner[i-1] = sqrt(_max[i-1] - _min[i-1] + 1.0)+_min[i-1]-1;
@@ -240,10 +240,10 @@ transitionmatrix::operator ()(lawa::DimensionIndex vals){
 		}
 	}
 	if(zeile == spalte){
-		//cout << "t2.evaluate( " << zeilenindex << ")" << endl;
+		//std::cout << "t2.evaluate( " << zeilenindex << ")" << std::endl;
 		return t2.evaluate(zeilenindex);
 	} else {
-		//cout << "t1.evaluate(" << vals << ")" << endl;
+		//std::cout << "t1.evaluate(" << vals << ")" << std::endl;
 		return t1.evaluate(vals);
 	}
 }

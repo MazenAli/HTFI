@@ -135,7 +135,7 @@ template <typename T>
 std::ostream &
 operator<<(std::ostream &out, DenseVectorList<T> &vl)
 {
-	out << "VL.length = " << vl.length() << endl;
+	out << "VL.length = " << vl.length() << std::endl;
 	for(int i = 1; i <= vl.length(); ++i){
 		out << "Vector "<<(i+1) << ":  " << *vl(i) ;
 	}

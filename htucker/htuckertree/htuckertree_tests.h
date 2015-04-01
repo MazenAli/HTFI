@@ -14,19 +14,19 @@ namespace lawa{
 
 
 void test_sparse_mult_ge(){
-	SparseGeMatrix<flens::extensions::CRS<double,flens::CRS_General> > s(3,4);
+	flens::SparseGeMatrix<flens::extensions::CRS<double,flens::CRS_General> > s(3,4);
 	s(1,2) = 1;
 	s(2,3) = 2;
 	s(3,4) = 3;
 	s.finalize();
-	GeMatrix<FullStorage<double,ColMajor> > g(4,4);
+	flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > g(4,4);
 	g = 1,2,3,4,
 		5,6,7,8,
 		9,10,11,12,
 		13,14,15,16;
-	GeMatrix<FullStorage<double,ColMajor> > erg;
+	flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > erg;
 	erg = s*g;
-	cout << erg << endl;
+	std::cout << erg << std::endl;
 };
 
 } // namespace lawa

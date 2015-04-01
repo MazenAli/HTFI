@@ -193,7 +193,7 @@ inverseNormApproximation::getVectors() const{
 		for(int j = 1; j<= 35; j++){
 			flens::DenseVector<flens::Array<double> > tmp(maxval[i]-minval[i]+1);
 			for(int l= tmp.firstIndex(); l<=tmp.lastIndex(); ++l){
-				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << endl;
+				//std::cout << "i= " << i << "  j= " << j << "    " << (minvec(i)+l-tmp.firstIndex()) << std::endl;
 				if(i == 1){
 					tmp(l) = weights(j)*exp(-(minval[i]+l-tmp.firstIndex())*(minval[i]+l-tmp.firstIndex())*alpha(j));
 				} else {

@@ -4,13 +4,13 @@
 namespace flens{
 	template <typename VX, typename VI>
 	void
-	sort(DenseVector<VX> &x, DenseVector<VI> &rho){
+	sort(flens::DenseVector<VX> &x, flens::DenseVector<VI> &rho){
 		using std::swap;
-		typedef typename DenseVector<VX>::IndexType  IndexType;
+		typedef typename flens::DenseVector<VX>::IndexType  IndexType;
 		
 		const IndexType n = x.length();
 
-		rho = DenseVector<VI>(n);
+		rho = flens::DenseVector<VI>(n);
 		for (IndexType i=1; i<=n; ++i) {
 			rho(i) = i;
 		}

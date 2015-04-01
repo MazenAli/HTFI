@@ -217,7 +217,7 @@ DimensionIndex::join(const DimensionIndex & rhs) const{
 
 DimensionIndex
 DimensionIndex::intersect(const DimensionIndex &rhs) const{
-	DimensionIndex neu(max(rhs.length(),len));
+	DimensionIndex neu(std::max(rhs.length(),len));
 	int count = 0;
 	for(int i = 0; i < len; ++i){
 		for(int j = 0; j < rhs.length(); ++j){
@@ -312,8 +312,8 @@ DimensionIndex::operator=(const DimensionIndex &rhs){
 				index[i] = rhs[i];
 			}
 		} else {
-			//cout << index << endl;
-			//cout << NULL << endl;
+			//std::cout << index << std::endl;
+			//std::cout << NULL << std::endl;
 			if(index != NULL){
 				delete [] index;
 			}
@@ -368,7 +368,7 @@ std::ostream& operator<<(std::ostream& Stream, const DimensionIndex& B)
 
 
 DimensionIndex::~DimensionIndex(){
-	//cout << (*this) <<  "    Destruct Index" << endl;
+	//std::cout << (*this) <<  "    Destruct Index" << std::endl;
 	delete [] index;
 	
 	//index = NULL;
