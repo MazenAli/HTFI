@@ -36,6 +36,7 @@ template <typename T>
 void 
 HTuckerTreeNode<T>::setUorB(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &_UorB){
 	//std::cout << "_UorB " << _UorB <<  std::endl;
+    UorB.resize(0,0);
 	UorB = _UorB;
 	//std::cout << "UorB copy " << UorB << std::endl;
 };
