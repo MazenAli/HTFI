@@ -33,13 +33,28 @@ HTuckerTreeNode<T>::getUorB() const{
 };
 
 template <typename T>
+const flens::DenseVector<flens::Array<T> >&
+HTuckerTreeNode<T>::getSigma() const{
+    return sigma;
+}
+
+template <typename T>
 void 
 HTuckerTreeNode<T>::setUorB(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &_UorB){
-	//std::cout << "_UorB " << _UorB <<  std::endl;
-    UorB.resize(0,0);
-	UorB = _UorB;
-	//std::cout << "UorB copy " << UorB << std::endl;
-};
+	if (UorB.numRows()!=_UorB.numRows() || UorB.numCols()!=_UorB.numCols()) {
+        UorB.resize(_UorB.numRows(), _UorB.numCols());
+    }
+    UorB = _UorB;
+}
+
+template <typename T>
+void
+HTuckerTreeNode<T>::setSigma(const flens::DenseVector<flens::Array<T> >& _sigma){
+    if (sigma.length()!=_sigma.length()) {
+        sigma.resize(_sigma.length());
+    }
+    sigma = _sigma;
+}
 
 //template <typename T>
 //flens::DenseVector<flens::Array<T> > & 

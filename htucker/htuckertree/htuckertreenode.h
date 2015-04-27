@@ -15,6 +15,7 @@ class HTuckerTreeNode{
 		flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > UorB;
 		//flens::DenseVector<flens::Array<T> > evaluate;
 		int UorB_rcnumel, UorB_lcnumel, UorB_numel;
+        flens::DenseVector<flens::Array<T> > sigma;
 
 	public:
 		HTuckerTreeNode();
@@ -32,8 +33,14 @@ class HTuckerTreeNode{
 		const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &
 		getUorB() const;
 
+        const flens::DenseVector<flens::Array<T> >&
+        getSigma() const;
+
 		void 
 		setUorB(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &_UorB);
+
+        void
+        setSigma(const flens::DenseVector<flens::Array<T> >& _sigma);
 
 		//flens::DenseVector<flens::Array<T> > & 
 		//getEvaluate() const;
