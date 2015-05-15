@@ -3,7 +3,7 @@ HTFI: HTucker C++ Library
 ==========================
 
 Original version written by Andreas Rupp.
-Contains modifications to source code in order to compile with clang.
+Contains modifications and bug fixes.
 
 Original note from author:
 ========================================================================================
