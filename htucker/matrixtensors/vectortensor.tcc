@@ -12,7 +12,7 @@ VectorTensor<T>::VectorTensor(const int _d):d(_d){
 template <typename T>
 VectorTensor<T>::~VectorTensor(){
 	for(int i = d-1; i >= 0 ; i--){
-		vectorlist[i].~DenseVector<flens::Array<T> >();
+		vectorlist[i].~DenseVector();
 	}
 	free(vectorlist);
 };

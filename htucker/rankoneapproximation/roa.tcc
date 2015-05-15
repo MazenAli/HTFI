@@ -15,7 +15,8 @@ ROA<T, TensorFunction>::ROA(const ROA<T,TensorFunction> &copy):t(copy.getT()),tb
 template <typename T, typename TensorFunction>
 void 
 ROA<T, TensorFunction>::addpivot(const DimensionIndex &pivot){
-	DimensionIndex ausw;
+	using flens::_;
+    DimensionIndex ausw;
 	this->pivots.add(pivot);
 
 	//std::cout << "roa.tcc ROA<T, SVD>::addpivot(DimensionIndex pivot): " << pivots << std::endl;
