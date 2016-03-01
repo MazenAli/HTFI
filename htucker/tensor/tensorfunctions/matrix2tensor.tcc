@@ -2,7 +2,7 @@ Matrix2Tensor::Matrix2Tensor(const int _min, const int _max, const int _d):d(_d)
 
 Matrix2Tensor::Matrix2Tensor(const DimensionIndex &_min, const DimensionIndex &_max):d(_min.length()),minval(_min),maxval(_max),matrixset(false){}
 
-Matrix2Tensor::Matrix2Tensor(const Matrix2Tensor &copy):d(copy.dim()),minval(copy.getmin()),maxval(copy.getmax()),conv(copy.getconverter()),M(&copy.getMatrix()),matrixset(copy.getmatrixset()){
+Matrix2Tensor::Matrix2Tensor(const Matrix2Tensor &copy):d(copy.dim()),minval(copy.getmin()),maxval(copy.getmax()),matrixset(copy.getmatrixset()),M(&copy.getMatrix()),conv(copy.getconverter()){
 }
 
 void 
@@ -34,8 +34,8 @@ Matrix2Tensor::setMatrix(flens::GeMatrix<flens::FullStorage<double,cxxblas::ColM
 }
 
 void
-Matrix2Tensor::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
-};
+Matrix2Tensor::vec() const{
+}
 
 
 

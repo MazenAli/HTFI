@@ -41,25 +41,25 @@ public:
 
 	//Get Pointer
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getParent() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getfirstChild() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getlastChild() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getnextSibling() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getpreviousSibling() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getlevelleft() const;
 
-	GeneralTreeNode<NType> * const
+	GeneralTreeNode<NType> *
 	getlevelright() const;
 
 	NType * getContent();

@@ -1,10 +1,10 @@
 namespace htucker{
 
 template <typename T, typename TensorFunction>
-ROA<T, TensorFunction>::ROA(const double _eps):d(0),Atensor(1,1),U(1,1),V(1,1),SVD_epsilon(_eps){};
+ROA<T, TensorFunction>::ROA(const double _eps):d(0),Atensor(1,1),U(1,1),V(1,1),SVD_epsilon(_eps){}
 
 template <typename T, typename TensorFunction>
-ROA<T, TensorFunction>::ROA(const tensor<TensorFunction> &_A, const DimensionIndex &_t, const DimensionIndex &_tbar, const int _dim, const double _eps):A(_A),t(_t),tbar(_tbar),d(_dim),Atensor(1,1),U(1,1),V(1,1),tcomplement(_t.getComplement(_dim)),SVD_epsilon(_eps){};
+ROA<T, TensorFunction>::ROA(const tensor<TensorFunction> &_A, const DimensionIndex &_t, const DimensionIndex &_tbar, const int _dim, const double _eps):A(_A),t(_t),tbar(_tbar),d(_dim),Atensor(1,1),U(1,1),V(1,1),tcomplement(_t.getComplement(_dim)),SVD_epsilon(_eps){}
 
 
 template <typename T, typename TensorFunction>
@@ -52,7 +52,7 @@ ROA<T, TensorFunction>::addpivot(const DimensionIndex &pivot){
 	}
 
 	//std::cout << "roa.tcc ROA<T, SVD>::addpivot(DimensionIndex pivot), svd: s = " << s << " U = " << U << " VT = " << V << std::endl;
-};
+}
 
 template <typename T, typename TensorFunction >
 T 
@@ -88,7 +88,7 @@ ROA<T, TensorFunction >::operator()(const DimensionIndex & vals) const{
 		sum+= A(idx)*sol(i + 1);
 	}
 	return sum;
-};
+}
 
 template <typename T, typename TensorFunction>
 flens::DenseVector<flens::Array<T> >
@@ -191,7 +191,7 @@ ROA<T, TensorFunction>::evaluate(const DimensionIndex & initialIndex, const Dime
 		return res1;
 	}
 	
-};
+}
 
 template <typename T, typename TensorFunction>
 flens::DenseVector<flens::Array<T> >
@@ -241,7 +241,7 @@ ROA<T, TensorFunction>::evaluate(const DimensionIndex & initialIndex, const Dime
 	res1 = flens::transpose(Aright) * res2;
 
 	return res1;
-};
+}
 
 
 
@@ -372,7 +372,7 @@ ROA<T, TensorFunction>::GreedyPivotSearch(const int lmax, const DimensionIndexLi
 	#endif
 	
 	return index;
-};
+}
 
 template <typename T, typename TensorFunction>
 void 
@@ -390,7 +390,7 @@ ROA<T, TensorFunction>::approximate(const int rank, const DimensionIndexList &fa
 			addpivot(newpiv);
 		}
 	}
-};
+}
 
 
 template <typename T, typename TensorFunction>
@@ -424,31 +424,31 @@ ROA<T, TensorFunction>::approximate(const double epsilon, const DimensionIndexLi
 		std::cout << "error/A(pivots[0]) = " << error/A(pivots[0]) << "  epsilon = " << epsilon << ", " << A(pivots[0]) << std::endl;
 	   #endif
 	} while(abs(error/A(pivots[0])) > epsilon);
-};
+}
 
 template <typename T, typename TensorFunction>
 void 
 ROA<T, TensorFunction>::print() const{
 	std::cout << "ROA: d = " << d << "  t = " << t << "   tbar = " << tbar << std::endl;
-};
+}
 
 template <typename T, typename TensorFunction>
 DimensionIndex 
 ROA<T, TensorFunction>::getTbar() const{
 return tbar;
-};
+}
 
 template <typename T, typename TensorFunction>
 DimensionIndex 
 ROA<T, TensorFunction>::getT() const{
 	return t;
-};
+}
 
 template <typename T, typename TensorFunction>
 int
 ROA<T, TensorFunction>::dim() const{
 	return d;
-};
+}
 
 template <typename T, typename TensorFunction>
 ROA<T,TensorFunction> &

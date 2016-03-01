@@ -27,10 +27,10 @@ public:
 
 	bool vecEval() const;
 
-	void  
-	vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const;
+	void
+	vec() const;
 
-	inverseNorm & 
+	inverseNorm &
 	operator=(const inverseNorm & copy);
 
 private:

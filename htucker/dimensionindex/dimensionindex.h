@@ -1,6 +1,8 @@
 #ifndef HTUCKER_DIMENSIONINDEX_DIMENSIONINDEX_H
 #define HTUCKER_DIMENSIONINDEX_DIMENSIONINDEX_H 1
 
+#include <cxxstd/iostream.h>
+#include <flens/flens.h>
 #include <htucker/dimensionindex/dynamiclist.h>
 #include <htucker/dimensionindex/densevectorlist.h>
 #include <htucker/dimensionindex/dimensionindexiteratortypes.h>
@@ -48,6 +50,8 @@ public:
 	void setValue(const int _value);
 
 	void setValue(const int _pos, const int _value);
+
+    void setValue(const flens::DenseVector<flens::Array<int> >& vals);
 
 	void setValue(const DimensionIndex &_values, const DimensionIndex &_activedims);
 
@@ -109,6 +113,7 @@ public:
 	bool operator==(const DimensionIndex &other);
 	 
 };
+
 
 }
 

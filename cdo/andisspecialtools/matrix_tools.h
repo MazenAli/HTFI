@@ -124,7 +124,7 @@ kronecker_product(const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> 
 		}
 	}
 	return C;
-};
+}
 
 template <typename T>
 flens::SparseGeMatrix<flens::extensions::CRS<T> > 
@@ -272,7 +272,7 @@ T Det(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
 
 		return Det<double>(U)*(count+0.0);
 	}
-};
+}
 
 
 template <typename T>
@@ -343,7 +343,7 @@ flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Vec2Mat(flens::DenseVe
 		}
 	}
 	return ret;
-};
+}
 
 template <typename T>
 flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Vec2Mat(typename flens::DenseVector<flens::Array<T> >::View vec,int m, int n){
@@ -355,7 +355,7 @@ flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Vec2Mat(typename flens
 		}
 	}
 	return ret;
-};
+}
 
 template <typename T>
 flens::DenseVector<flens::Array<T> > Mat2Vec(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > mat){
@@ -369,7 +369,7 @@ flens::DenseVector<flens::Array<T> > Mat2Vec(flens::GeMatrix<flens::FullStorage<
 		}
 	}
  return ret;
-};
+}
 
 
 
@@ -411,7 +411,7 @@ mm(cxxblas::Transpose transA,
 	   }
 		mm(transA,transB,alpha,A,D,beta,C);
 	}
-};
+}
 
 template <typename T>
 void
@@ -448,7 +448,7 @@ mm(cxxblas::Transpose transA,
 	   }
 		mm(transA,transB,alpha,D,B,beta,C);
 	}
-};
+}
 
 
 template <typename T>
@@ -473,7 +473,7 @@ sparse2full(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> >
 	};
 
 	return B;
-};
+}
 
 template <typename T> 
 flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >
@@ -484,7 +484,7 @@ tovector(flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > & A){
 		B(_((i-1)*A.numRows()+1,i*A.numRows()),1) = A(_,i);
 	}
 	return B;
-};
+}
 
 
 template <typename T>
@@ -522,7 +522,7 @@ mm(cxxblas::Transpose transA,
 	   }
 		mm(transA,transB,alpha,D,B,beta,C);
 	}
-};
+}
 
 
 } //namespace lawa

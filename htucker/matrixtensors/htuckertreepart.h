@@ -17,7 +17,7 @@ namespace htucker{
 	};
 
 
-}; //namespace htucker
+} //namespace htucker
 
 #include <htucker/matrixtensors/htuckertreepart.tcc>
 

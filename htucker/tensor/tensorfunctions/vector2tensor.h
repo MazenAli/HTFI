@@ -31,10 +31,10 @@ class Vector2Tensor{
 
 	int dim() const;
 
-	void  
-	vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const;
+	void
+	vec() const;
 
-	const DimensionIndex & 
+	const DimensionIndex &
 	getmin() const;
 
 	const DimensionIndex &

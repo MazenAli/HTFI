@@ -78,7 +78,7 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const T 
     }
     return maxIterations;
 	return 1;
-};
+}
 
 
 template <typename T>
@@ -158,7 +158,7 @@ cg(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, const in
     }
     return maxIterations;
 	return 1;
-};
+}
 
 
 
@@ -225,7 +225,7 @@ bicgstab(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, co
     }
     return maxIterations;
 	return 1;
-};
+}
 
 
 
@@ -382,7 +382,7 @@ bicgstab(const HTuckerTree<T> &A, HTuckerTree<T> &x, const HTuckerTree<T> &b, co
     }
     return maxIterations;
 	return 1;
-};
+}
 
 template <typename T, typename Aop, class A1, class A2>
 int
@@ -1273,7 +1273,3 @@ gmresm(const HTuckerClosure<Aop,A1,A2> &A, HTuckerTree<T> &x, const HTuckerTree<
 
 
 } // namespace htucker
-
-
-
-

@@ -2,12 +2,12 @@ namespace htucker{
 
 
 template <typename NType>
-GeneralTree<NType>::GeneralTree():root(NULL){};
+GeneralTree<NType>::GeneralTree():root(NULL){}
 
 template <typename NType>
 GeneralTree<NType>::GeneralTree(const NType &_rootcontent){
 	root = new GeneralTreeNode<NType>(_rootcontent);
-};
+}
 
 template <typename NType>
 GeneralTree<NType>::GeneralTree(const GeneralTree<NType> &_copy){
@@ -41,7 +41,7 @@ GeneralTree<NType>::GeneralTree(const GeneralTree<NType> &_copy){
 			break;
 		}
 	}
-};
+}
 
 
 template <typename NType>
@@ -78,13 +78,13 @@ GeneralTree<NType>::GeneralTree(const GeneralTree<NType2> &_copy){
 			break;
 		}
 	}
-};
+}
 
 
 template <typename NType>
 GeneralTree<NType>::~GeneralTree(){
 	empty();
-};
+}
 
 template <typename NType>
 void 
@@ -94,7 +94,7 @@ GeneralTree<NType>::print() const{
 	} else {
 		std::cout << "empty GeneralTree" << std::endl;
 	}
-};
+}
 
 template <typename NType>
 void 
@@ -106,14 +106,14 @@ GeneralTree<NType>::empty(){
 		delete root;
 		root = NULL;
 	}
-};
+}
 
 template <typename NType>
 GeneralTreeIterator<NType>
 GeneralTree<NType>::begin() const{
 	GeneralTreeIterator<NType> ret(root);
 	return ret;
-};
+}
 
 template <typename NType>
 GeneralTreeIterator<NType>
@@ -136,7 +136,7 @@ GeneralTree<NType>::end() const{
 
 	GeneralTreeIterator<NType> ret(save);
 	return ret;
-};
+}
 
 template <typename NType>
 GeneralTree<NType> & 
@@ -180,6 +180,6 @@ GeneralTree<NType>::operator= (const GeneralTree<NType> &_copy){
 	}
 	return *this;
 	
-};
+}
 
 } //  namespace lawa

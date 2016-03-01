@@ -1,8 +1,8 @@
-inverseNorm::inverseNorm(const int _min, const int _max,const int _d):d(_d),minval(DimensionIndex(_min,_d)),maxval(DimensionIndex(_max,_d)){};
+inverseNorm::inverseNorm(const int _min, const int _max,const int _d):d(_d),minval(DimensionIndex(_min,_d)),maxval(DimensionIndex(_max,_d)){}
 
 inverseNorm::inverseNorm(const DimensionIndex &_min, const DimensionIndex &_max):d(_min.length()),minval(_min),maxval(_max){
 	assert(d == _min.length() && d == _max.length());
-};
+}
 
 inverseNorm::inverseNorm(const inverseNorm & copy):d(copy.dim()),minval(copy.getmin()),maxval(copy.getmax()){}
 
@@ -14,9 +14,9 @@ inverseNorm::operator()(const DimensionIndex &vals) const{
 		res+= vals[i]*vals[i];
 	}
 	return 1.0/sqrt(res);
-};
+}
 
-int 
+int
 inverseNorm::dim() const{
 	return d;
 }
@@ -31,13 +31,13 @@ inverseNorm::getmax() const{
 	return maxval;
 }
 
-bool 
+bool
 inverseNorm::vecEval() const{
 	return false;
 }
 
-void  
-inverseNorm::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
+void
+inverseNorm::vec() const{
 	
 }
 

@@ -215,7 +215,7 @@ inverseNormApproximation::vecEval() const{
 }
 
 void  
-inverseNormApproximation::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
+inverseNormApproximation::vec() const{
 
 }
 

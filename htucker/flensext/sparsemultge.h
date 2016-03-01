@@ -21,7 +21,7 @@ operator*(flens::SparseGeMatrix<flens::extensions::CRS<T,flens::CRS_General> > &
 		}
 	}
 	return ret;
-};
+}
 
 }
 

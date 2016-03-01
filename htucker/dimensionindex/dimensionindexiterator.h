@@ -6,8 +6,8 @@ namespace htucker{
 
 template <>
 class DimensionIndexIterator<Iterator1D>{
-	int dim, minit, maxit;
 	DimensionIndex idx;
+	int dim, minit, maxit;
 	
 public:
 	DimensionIndexIterator(const DimensionIndex & _idx, const int _dim, const int _min, const int _max);
@@ -159,6 +159,6 @@ public:
 
 };
 
-};
+}
 
 #endif //HTUCKER_DIMENSIONINDEX_DIMENSIONINDEXITERATOR_H

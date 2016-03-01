@@ -30,8 +30,14 @@ class HTuckerTreeNode{
 		const DimensionIndex &
 		getIndex() const;
 
+        DimensionIndex &
+        getIndex();
+
 		const flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &
 		getUorB() const;
+
+        flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &
+		getUorB();
 
         const flens::DenseVector<flens::Array<T> >&
         getSigma() const;

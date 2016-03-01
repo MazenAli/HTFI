@@ -1,10 +1,10 @@
 namespace htucker{
 
 template <typename NType>
-GeneralTreeIterator<NType>::GeneralTreeIterator():begin(NULL),levelstep(NULL),lastnode(NULL){};
+GeneralTreeIterator<NType>::GeneralTreeIterator():begin(NULL),levelstep(NULL),lastnode(NULL){}
 
 template <typename NType>
-GeneralTreeIterator<NType>::GeneralTreeIterator(GeneralTreeNode<NType> * _begin):begin(_begin),levelstep(NULL),lastnode(NULL){};
+GeneralTreeIterator<NType>::GeneralTreeIterator(GeneralTreeNode<NType> * _begin):begin(_begin),levelstep(NULL),lastnode(NULL){}
 
 template <typename NType>
 void 
@@ -19,7 +19,7 @@ GeneralTreeIterator<NType>::operator++(int){
 		begin = levelstep; //this can be NULL
 		levelstep = NULL;
 	}
-};
+}
 
 
 template <typename NType>
@@ -40,7 +40,7 @@ GeneralTreeIterator<NType>::operator--(int){
 		}
 		levelstep = NULL;
 	}
-};
+}
 
 
 template <typename NType>
@@ -51,7 +51,7 @@ GeneralTreeIterator<NType>::operator<= (const GeneralTreeIterator<NType> &Right)
 	} else {
 		return false;
 	}
-};
+}
 
 template <typename NType>
 bool
@@ -61,7 +61,7 @@ GeneralTreeIterator<NType>::operator>= (const GeneralTreeIterator<NType> &Right)
 	} else {
 		return false;
 	}
-};
+}
 
 template <typename NType>
 bool
@@ -71,7 +71,7 @@ GeneralTreeIterator<NType>::operator== (const GeneralTreeIterator<NType> &Right)
 	} else {
 		return false;
 	}
-};
+}
 
 template <typename NType>
 bool
@@ -81,7 +81,7 @@ GeneralTreeIterator<NType>::operator!= (const GeneralTreeIterator<NType> &Right)
 	} else {
 		return false;
 	}
-};
+}
 
 
 
@@ -90,7 +90,7 @@ template <typename NType>
 GeneralTreeNode<NType> *
 GeneralTreeIterator<NType>::getNode() const{
 	return begin;
-};
+}
 
 
 } // namespace htucker

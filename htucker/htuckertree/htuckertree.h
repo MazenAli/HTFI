@@ -33,6 +33,9 @@ public:
 
 	HTuckerTree(const int _d, const double _split);
 
+    void
+    set_tree(const HTuckerTree<T>& X);
+
 	template <typename NType>
 	GeneralTree<NType>
 	copy() const;
@@ -48,6 +51,9 @@ public:
 
 	const GeneralTree<HTuckerTreeNode<T> > &
 	getGeneralTree() const;
+
+	GeneralTree<HTuckerTreeNode<T> > &
+	getGeneralTree();
 
 	T evaluate(const DimensionIndex &index) const; 
 	
@@ -75,8 +81,14 @@ public:
 	template <typename TensorFunction>
 	void approximate(const tensor<TensorFunction> &tf, const int rank, const int l = 3);
 
-	template <typename TensorFunction>
+    template <typename TensorFunction>
 	void approximate(const tensor<TensorFunction> &tf, const double epsilon, const int l = 3);
+
+    void
+    truncate(const int rank, bool isorth = false);
+
+    void
+    truncate(double eps, bool isorth = false);
 
 	T Linfnorm(HTuckerTree<T> & anothertree,const DimensionIndex & minval,const DimensionIndex & maxval,const int n); //not const because evaluation of this and anothertree is needed!
 

@@ -2,7 +2,7 @@
 
 m2vindexconverter::m2vindexconverter(const DimensionIndex &_min, const DimensionIndex &_max):minidx(_min),maxidx(_max),rowinfo(false){}
 
-m2vindexconverter::m2vindexconverter(const m2vindexconverter & copy):minidx(copy.getMin()),maxidx(copy.getInputMax()),rowinfo(copy.hasRowInfo()),maxidxrow(copy.getRowInfoMax()),minidxrow(copy.getRowInfoMin()){}
+m2vindexconverter::m2vindexconverter(const m2vindexconverter & copy):minidx(copy.getMin()),maxidx(copy.getInputMax()),minidxrow(copy.getRowInfoMin()),maxidxrow(copy.getRowInfoMax()),rowinfo(copy.hasRowInfo()){}
 
 
 void 

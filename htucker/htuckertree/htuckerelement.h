@@ -14,6 +14,6 @@ struct HTuckerElement{
 };
 
 
-}; // lawa
+} // lawa
 
 #endif //LAWA_METHODS_HTUCKER_HTUCKERTREE_HTUCKERELEMENT_H

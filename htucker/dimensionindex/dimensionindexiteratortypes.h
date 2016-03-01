@@ -13,7 +13,7 @@ class IteratorList{};
 
 class IteratorListALL{};
 
-};
+}
 
 
 #endif // LAWA_HTUCKER_DIMENSIONINDEXITERATORTYPES_H

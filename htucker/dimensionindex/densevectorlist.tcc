@@ -19,12 +19,12 @@ DenseVectorList<T>::DenseVectorList(const flens::DenseVector<flens::Array<T> > &
 	lastnode = node;
 	len = 1;
 	pos = 1;
-};
+}
 
 template <typename T>
 DenseVectorList<T>::~DenseVectorList(){
 	//empty();
-};
+}
 
 
 template <typename T>
@@ -41,7 +41,7 @@ DenseVectorList<T>::add(const flens::DenseVector<flens::Array<T> > &vector){
 		len = 1;
 		pos = 1;
 	}
-};
+}
 
 template <typename T>
 void 
@@ -95,7 +95,8 @@ DenseVectorList<T>::remove(const int i){
 			}
 		}
 	}
-};
+}
+
 
 template <typename T>
 void 
@@ -104,14 +105,15 @@ DenseVectorList<T>::empty(){
 	for(int i = 1; i <= end; ++i){
 		this->remove(1);
 	}
-};
+}
 
 
 template <typename T>
 int 
 DenseVectorList<T>::length() const{
 	return len;
-};
+}
+
 
 template <typename T>
 flens::DenseVector<flens::Array<T> > * 
@@ -129,7 +131,7 @@ DenseVectorList<T>::operator()(const int i){
 		}
 	}
 	return NULL;
-};
+}
 
 template <typename T>
 std::ostream &
@@ -140,6 +142,6 @@ operator<<(std::ostream &out, DenseVectorList<T> &vl)
 		out << "Vector "<<(i+1) << ":  " << *vl(i) ;
 	}
 	return out;
-};
+}
 
 } //namespace htucker

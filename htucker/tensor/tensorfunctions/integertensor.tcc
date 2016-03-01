@@ -1,8 +1,8 @@
-IntegerTensor::IntegerTensor(const int _min, const int _max, const int _d):offset(0),d(_d),minval(DimensionIndex(_min,_d)),maxval(DimensionIndex(_max,_d)){
+IntegerTensor::IntegerTensor(const int _min, const int _max, const int _d):d(_d),minval(DimensionIndex(_min,_d)),maxval(DimensionIndex(_max,_d)),offset(0){
 	assert(_min == 0);
 }
 
-IntegerTensor::IntegerTensor(const DimensionIndex &_min, const DimensionIndex &_max):offset(0),d(_min.length()),minval(_min),maxval(_max){
+IntegerTensor::IntegerTensor(const DimensionIndex &_min, const DimensionIndex &_max):d(_min.length()),minval(_min),maxval(_max),offset(0){
 	assert(_min.length() == _max.length());
 	for(int i = 0; i < _min.length(); ++i){
 		assert(_max[i] == _max[0] && _min[i] == 0);
@@ -10,7 +10,7 @@ IntegerTensor::IntegerTensor(const DimensionIndex &_min, const DimensionIndex &_
 	
 }
 
-IntegerTensor::IntegerTensor(const IntegerTensor &copy):offset(copy.getoffset()),minval(copy.getmin()),maxval(copy.getmax()),d(copy.dim()){}
+IntegerTensor::IntegerTensor(const IntegerTensor &copy):d(copy.dim()),minval(copy.getmin()),maxval(copy.getmax()),offset(copy.getoffset()){}
 
 
 

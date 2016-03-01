@@ -1,6 +1,8 @@
+#include <cassert>
+
 namespace htucker{
 
-DimensionIndex::DimensionIndex():len(0),index(NULL){};
+DimensionIndex::DimensionIndex():index(NULL), len(0){}
 
 DimensionIndex::DimensionIndex(const int  _d): len(_d){
 	assert(_d >= 0);
@@ -8,7 +10,7 @@ DimensionIndex::DimensionIndex(const int  _d): len(_d){
 	for(int i = 0; i< _d; ++i){
 		index[i] = 0;
 	}
-};
+}
 
 DimensionIndex::DimensionIndex(const int * _index,const int  _d){
 	len = _d;
@@ -16,7 +18,7 @@ DimensionIndex::DimensionIndex(const int * _index,const int  _d){
 	for(int i = 0; i< len; ++i){
 		index[i] = _index[i];
 	}
-};
+}
 
 DimensionIndex::DimensionIndex(const int  constval,const int  _d){
 	len = _d;
@@ -24,7 +26,7 @@ DimensionIndex::DimensionIndex(const int  constval,const int  _d){
 	for(int i = 0; i< len; ++i){
 		index[i] = constval;
 	}
-};
+}
 
 DimensionIndex::DimensionIndex(const DimensionIndex &copy){
 	len = copy.length();
@@ -34,7 +36,7 @@ DimensionIndex::DimensionIndex(const DimensionIndex &copy){
 			index[i] = copy[i];
 		}
 	}
-};
+}
 
 
 void
@@ -42,7 +44,7 @@ DimensionIndex::setRandom(const int  _min, const int  _max){
 	for(int i = 0; i< len; ++i){
 		index[i] = (rand() % (_max - _min + 1)) + _min;
 	}
-};
+}
 
 void
 DimensionIndex::setRandom(const DimensionIndex &_min, const DimensionIndex &_max){
@@ -51,19 +53,19 @@ DimensionIndex::setRandom(const DimensionIndex &_min, const DimensionIndex &_max
 	for(int i = 0; i< this->length(); ++i){
 		index[i] = (rand() % (_max[i] - _min[i] + 1)) + _min[i];
 	}
-};
+}
 
 void DimensionIndex::setRandom(const int  _pos, const int  _min, const int  _max){
 	assert(_pos >= 0 && _pos < this->length());
 	index[_pos - 1] = (rand() % (_max - _min + 1)) + _min;
-};
+}
 
 void DimensionIndex::setRandom(const DimensionIndex & _dimidx, const DimensionIndex &_min, const DimensionIndex &_max){
 	assert(this->length() == _min.length() && this->length() == _max.length());
 	for(int i = 0; i< _dimidx.length(); ++i){
 		index[_dimidx[i]-1] = (rand() % (_max[_dimidx[i]-1] - _min[_dimidx[i]-1] + 1)) + _min[_dimidx[i]-1];
 	}
-};
+}
 
 void DimensionIndex::setRandom(const DimensionIndexList &_dimlist){
 	int pos = rand() % _dimlist.length();
@@ -71,47 +73,59 @@ void DimensionIndex::setRandom(const DimensionIndexList &_dimlist){
 	for(int i = 0; i < len; ++i){
 		index[i] = _dimlist[pos][i];
 	}
-};
+}
 
 void DimensionIndex::setRandom(const DimensionIndexList &_dimlist,const DimensionIndex &_activedims){
 	DimensionIndex save = _dimlist[rand() % _dimlist.length()];
 	for(int i = 0; i< _activedims.length(); ++i){
 		index[_activedims[i] - 1] = save[_activedims[i] - 1];
 	}
-};
+}
 
 void 
 DimensionIndex::setValue(const int _value){
 	for(int i = 0; i< len; ++i){
 		index[i] = _value;
 	}
-};
+}
 
 void 
 DimensionIndex::setValue(const int _pos, const int _value){
 	index[_pos - 1] = _value;
-};
+}
+
+void
+DimensionIndex::setValue(const flens::DenseVector<flens::Array<int> >& vals)
+{
+    typedef flens::DenseVector<flens::Array<int> >::IndexType  IndexType;
+
+    assert(vals.length() <= len);
+    IndexType first = vals.firstIndex();
+    for (IndexType i=vals.firstIndex(); i!=vals.endIndex(); i+=vals.inc()) {
+        index[(int)(i-first)] = vals(i);
+    }
+}
 
 void 
 DimensionIndex::setValue(const DimensionIndex &_values, const DimensionIndex &_activedims){
 	for(int i = 0; i < _activedims.length(); ++i){
 		index[_activedims[i] - 1] = _values[_activedims[i]-1];	
 	}
-};
+}
 
 void 
 DimensionIndex::setValueAsc(){
 	for(int i = 0; i< len; ++i){
 		index[i] = i+1;
 	}
-};
+}
 
 void 
 DimensionIndex::setValueAsc(const int _min){
 	for(int i = 0; i < len; i++){
 		index[i] = i + _min;
 	}
-};
+}
 
 bool 
 DimensionIndex::equals(const DimensionIndex &_anotherindex, const DimensionIndex &_compareDims) const{
@@ -121,7 +135,7 @@ DimensionIndex::equals(const DimensionIndex &_anotherindex, const DimensionIndex
 		}
 	}
 	return true;
-};
+}
 
 bool 
 DimensionIndex::equals(const DimensionIndexList &_dimlist, const DimensionIndex &_compareDims) const{
@@ -131,7 +145,7 @@ DimensionIndex::equals(const DimensionIndexList &_dimlist, const DimensionIndex 
 		}
 	}
 	return false;
-};
+}
 
 int 
 DimensionIndex::computeBEvalue(const int _min, const int _max) const{
@@ -213,7 +227,7 @@ DimensionIndex::join(const DimensionIndex & rhs) const{
 		ret[i + len] = rhs[i];
 	}
 	return ret;
-};
+}
 
 DimensionIndex
 DimensionIndex::intersect(const DimensionIndex &rhs) const{
@@ -240,42 +254,42 @@ DimensionIndex::getIterator(const int _dim, const int _min, const int _max) cons
 	DimensionIndexIterator<Iterator1D> ret(*this,_dim,_min,_max);
 	ret.setFirst();
 	return ret;
-};
+}
 
 DimensionIndexIterator<Iterator1D> 
 DimensionIndex::getReverseIterator(const int _dim, const int _min, const int _max) const{
 	DimensionIndexIterator<Iterator1D> ret(*this,_dim,_min,_max);
 	ret.setLast();
 	return ret;
-};
+}
 
 DimensionIndexIterator<IteratorXD> 
 DimensionIndex::getIterator(const DimensionIndex & _activeDims, const DimensionIndex & _min, const DimensionIndex & _max) const{
 	DimensionIndexIterator<IteratorXD> ret(*this,_activeDims, _min, _max);
 	ret.setFirst();
 	return ret;
-};
+}
 
 DimensionIndexIterator<IteratorXD> 
 DimensionIndex::getReverseIterator(const DimensionIndex & _activeDims, const DimensionIndex & _min, const DimensionIndex & _max) const{
 	DimensionIndexIterator<IteratorXD> ret(*this,_activeDims, _min, _max);
 	ret.setLast();
 	return ret;
-};
+}
 
 DimensionIndexIterator<IteratorList> 
 DimensionIndex::getIterator(const DimensionIndex &_activeset,  const DimensionIndexList & _idxlist) const{
 	DimensionIndexIterator<IteratorList> ret(*this, _activeset, _idxlist);
 	ret.setFirst();
 	return ret;
-};
+}
 
 DimensionIndexIterator<IteratorList> 
 DimensionIndex::getReverseIterator(const DimensionIndex &_activeset,  const DimensionIndexList & _idxlist) const{
 	DimensionIndexIterator<IteratorList> ret(*this, _activeset, _idxlist);
 	ret.setLast();
 	return ret;
-};
+}
 
 void 
 DimensionIndex::Reverse(){
@@ -292,13 +306,13 @@ DimensionIndex::Reverse(){
 int 
 DimensionIndex::length() const{
 	return len;
-};
+}
 
 int& 
 DimensionIndex::operator[] (const int x) const{
 	assert(x >= 0 && x < this->length());
 	return index[x];
-};
+}
 
 //DimensionIndex&
 diinitializer
@@ -326,7 +340,7 @@ DimensionIndex::operator=(const DimensionIndex &rhs){
 		//return *this;
 	}
 	return diinitializer(*this);
-};
+}
 
 //DimensionIndex&
 diinitializer 
@@ -335,7 +349,7 @@ DimensionIndex::operator=(const int  arr){
 	return init;
 	
 	
-};
+}
 
 bool 
 DimensionIndex::operator==(const DimensionIndex &other){
@@ -364,7 +378,7 @@ std::ostream& operator<<(std::ostream& Stream, const DimensionIndex& B)
 	}
 	Stream <<  "} ";
 	return Stream;
-};
+}
 
 
 DimensionIndex::~DimensionIndex(){
@@ -372,8 +386,7 @@ DimensionIndex::~DimensionIndex(){
 	delete [] index;
 	
 	//index = NULL;
-};
-
+}
 
 
 } // namespace htucker

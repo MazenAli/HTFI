@@ -27,7 +27,7 @@ Vector2Tensor::vecEval() const{
 }
 
 void  
-Vector2Tensor::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
+Vector2Tensor::vec() const{
 }
 
 bool 

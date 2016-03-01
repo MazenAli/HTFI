@@ -33,7 +33,7 @@ class HTuckerClosure{
 
 
 
-};
+}
 
 #include <htucker/matrixtensors/htuckerclosure.tcc>
 

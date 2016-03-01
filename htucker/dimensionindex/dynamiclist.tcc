@@ -1,5 +1,7 @@
+#include <cassert>
+
 template <typename T>
-dynamiclist<T>::dynamiclist():count(0),root(NULL),last(NULL){};
+dynamiclist<T>::dynamiclist():count(0),root(NULL),last(NULL){}
 
 template <typename T>
 void
@@ -14,7 +16,7 @@ dynamiclist<T>::append(const T &val){
 	}
 
 	count++;
-};
+}
 
 template <typename T>
 T
@@ -25,11 +27,11 @@ dynamiclist<T>::operator[](const int i) const{
 		pos = pos->next;
 	}
 	return pos->value;
-};
+}
 
 
 template <typename T>
 int
 dynamiclist<T>::length() const{
 	return count;
-};
+}

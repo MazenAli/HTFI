@@ -9,7 +9,7 @@ namespace flens{
 
 	struct OpTensor{};
 
-};
+}
 
 
 namespace htucker{
@@ -228,7 +228,7 @@ operator*(const HTuckerTree<T> &tree, const HTuckerTreePart<T> &treepart);
 
 
 
-};
+}
 
 #include <htucker/matrixtensors/operators.tcc>
 

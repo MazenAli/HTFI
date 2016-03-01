@@ -35,8 +35,8 @@ class inverseNormApproximation{
 	
 	bool vecEval() const;
 
-	void  
-	vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const;
+	void
+	vec() const;
 
 	inverseNormApproximation&
 	operator=(const inverseNormApproximation & copy);

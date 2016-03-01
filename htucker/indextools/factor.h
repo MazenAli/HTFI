@@ -10,7 +10,7 @@ namespace htucker{
 			}
 		}
 		return DimensionIndex(i,1);
-	};
+	}
 }
 
 #endif //HTUCKER_INDEXTOOLS_FACTOR_H 

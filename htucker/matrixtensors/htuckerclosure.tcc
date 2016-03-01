@@ -3,7 +3,7 @@ namespace htucker{
 
 template <typename op,class A, class B>
 HTuckerClosure<op,A,B>::HTuckerClosure(const A & _left, const B & _right, const int _d):left(_left),right(_right),d(_d){
-};
+}
 
 
 template <typename op,class A, class B>
@@ -28,4 +28,4 @@ HTuckerClosure<op,A,B>::dim() const{
 
 
 
-};
+}

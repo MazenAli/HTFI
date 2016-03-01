@@ -39,8 +39,8 @@ exponentialSum::vecEval() const {
 	return false;
 }
 
-void  
-exponentialSum::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
+void
+exponentialSum::vec() const{
 }
 
 

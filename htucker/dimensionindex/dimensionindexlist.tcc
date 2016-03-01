@@ -4,7 +4,7 @@ DimensionIndexList::DimensionIndexList(){
 	list = new DimensionIndex[10];
 	size = 10;
 	len = 0;
-};
+}
 
 DimensionIndexList::DimensionIndexList(const DimensionIndex  &_firstElement){
 	list = new DimensionIndex[10];
@@ -12,7 +12,7 @@ DimensionIndexList::DimensionIndexList(const DimensionIndex  &_firstElement){
 	len = 0;
 	list[0] = _firstElement;
 	len = 1;
-};
+}
 
 DimensionIndexList::DimensionIndexList(const DimensionIndexList &copylist){
 	list = new DimensionIndex[10];
@@ -25,11 +25,11 @@ DimensionIndexList::DimensionIndexList(const DimensionIndexList &copylist){
 
 DimensionIndexList::~DimensionIndexList(){
 	delete [] list;
-};
+}
 
 
 
-void 
+void
 DimensionIndexList::add(const DimensionIndex &_newElement){
 	if(len < size){
 		list[len] = _newElement;
@@ -47,36 +47,36 @@ DimensionIndexList::add(const DimensionIndex &_newElement){
 		list[len] = _newElement;
 		len ++;
 	}
-};
+}
 
-void 
+void
 DimensionIndexList::remove(const int  _pos){
 	assert(_pos >= 0 && _pos < len);
 	for(int i = _pos; i < len - 1; ++i){
 		list[i] = list[i+1];
 	}
 	len--;
-};
+}
 
-void 
+void
 DimensionIndexList::empty(){
 	delete [] list;
 	list = new DimensionIndex[10];
 	size = 10;
 	len = 0;
-};
+}
 
 int
 DimensionIndexList::length() const{
 	return len;
-};
+}
 
 // This function not really const // Mazen
 DimensionIndex& 
 DimensionIndexList::operator[] (const int x) const{
 	assert(x>= 0 && x < len);
 	return list[x];
-};
+}
 
 DimensionIndexList &
 DimensionIndexList::operator= (const DimensionIndexList & copylist){
@@ -100,7 +100,7 @@ std::ostream& operator<<(std::ostream& Stream, const DimensionIndexList& B)
 		}
 		Stream << "} ";
 	return Stream;
-};
+}
 
 } // namespace htucker
 

@@ -235,8 +235,8 @@ exponentialSumApproximation::vecEval() const{
 	return false;
 }
 
-void  
-exponentialSumApproximation::vec(const DimensionIndex & vals, const int dim, flens::DenseVector<flens::Array<type> > & vec) const{
+void
+exponentialSumApproximation::vec() const{
 }
 
 

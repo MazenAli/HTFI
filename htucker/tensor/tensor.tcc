@@ -39,7 +39,7 @@ tensor<TensorFunction>::LinfNorm(const int n) const{
 		}
 	}
 	return maxi;
-};
+}
 
 template <typename TensorFunction>
 typename TensorFunction::type
@@ -84,7 +84,7 @@ tensor<TensorFunction>::vec(const DimensionIndex & vals, const int dim) const{
 	flens::DenseVector<flens::Array<typename TensorFunction::type> > v(maxval[dim-1]+1);
 	tf.vec(vals,dim,v);
 	return v;
-};
+}
 
 template <typename TensorFunction>
 tensor<TensorFunction> &
