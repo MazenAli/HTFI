@@ -1,4 +1,5 @@
 #include <cassert>
+#include <limits>
 
 namespace htucker{
 
@@ -388,5 +389,32 @@ DimensionIndex::~DimensionIndex(){
 	//index = NULL;
 }
 
+
+int
+DimensionIndex::min() const
+{
+    if (length()<=0) return -1;
+
+    int min = std::numeric_limits<int>::max();
+    for (int i=0; i<len; ++i) {
+        min = (index[i]<min) ? index[i] : min;
+    }
+
+    return min;
+}
+
+
+int
+DimensionIndex::max() const
+{
+    if (length()<=0) return -1;
+
+    int max = -1;
+    for (int i=0; i<len; ++i) {
+        max = (index[i]>max) ? index[i] : max;
+    }
+
+    return max;
+}
 
 } // namespace htucker

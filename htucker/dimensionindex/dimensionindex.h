@@ -112,6 +112,11 @@ public:
 
 	bool operator==(const DimensionIndex &other);
 	 
+    int
+    min() const;
+
+    int
+    max() const;
 };
 
 
