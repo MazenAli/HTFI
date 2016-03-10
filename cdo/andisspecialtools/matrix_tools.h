@@ -21,7 +21,7 @@
 #define LAWA_MATRIX_TOOLS_H 1
 
 #include <flens/flens.h>
-#include <lawa/lawa.h>
+//#include <lawa/lawa.h>
 #include <htucker/htucker.h>
 
 namespace lawa{
