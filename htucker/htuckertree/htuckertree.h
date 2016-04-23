@@ -46,6 +46,9 @@ public:
 
 	void print_w_UorB() const;
 
+    void
+    print_svs(bool isorth=false);
+
 	//please call this function only for vectors of small length!!!
 	void print_values() const;
 
@@ -60,7 +63,12 @@ public:
 	flens::DenseVector<flens::Array<T> >
 	vec_evaluate(const DimensionIndex &index, const int vardim) const;
 
-	void orthogonalize();
+    void orthogonalize();
+
+    void orthogonalize_svd(std::vector
+                           <flens::DenseVector
+                           <flens::Array<T> > >& sigmas,
+                           bool isorth = false);
 
 	T L2norm() const;
 
@@ -90,6 +98,7 @@ public:
     void
     truncate(double eps, bool isorth = false);
 
+
 	T Linfnorm(HTuckerTree<T> & anothertree,const DimensionIndex & minval,const DimensionIndex & maxval,const int n); //not const because evaluation of this and anothertree is needed!
 
 	T Linfnorm(const DimensionIndex & minval, const DimensionIndex & maxval, const int n);  //not const because of evaluate!
@@ -113,6 +122,8 @@ public:
 
 	void setdim(const int dim);
 
+    HTuckerTree<T>&
+    operator=(const HTuckerTree<T>& copy);
 };
 
 

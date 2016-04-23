@@ -1,6 +1,7 @@
 #include <flens/flens.cxx>
 #include <vector>
 #include <cstddef>
+#include <cassert>
 
 namespace htucker{
 
@@ -156,6 +157,48 @@ HTuckerTree<T>::print_w_UorB() const{
 	}
 
 }
+
+
+template <typename T>
+void
+HTuckerTree<T>::print_svs(bool isorth)
+{
+    using flens::_;
+
+    HTuckerTree<T> Stree;
+    Stree.set_tree(*this);
+    if (!isorth) {
+       this->orthogonalize();
+    }
+
+    HTuckerTree<T> gram = gramians_orthogonal(*this);
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
+    flens::DenseVector<flens::Array<T> > s;
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
+    std::vector<flens::DenseVector<flens::Array<T> > >  svals;
+    int count = 0;
+    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++){
+        flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+        svals.push_back(s);
+        count += s.length();
+    }
+
+    flens::DenseVector<flens::Array<T> > s_all(count);
+    count = 1;
+    for (std::size_t i=0; i<svals.size(); ++i) {
+        s_all(_(count,count+svals[i].length()-1)) = svals[i];
+        count += svals[i].length();
+    }
+
+
+    flens::DenseVector<flens::Array<T> > rho(s_all.length());
+    flens::sort(s_all, rho);
+    std::cout << "***The singular vals are***\n" << s_all
+              << std::endl;
+}
+
 
 template <typename T>
 void 
@@ -572,6 +615,102 @@ HTuckerTree<T>::orthogonalize(){
 
 
 template <typename T>
+void
+HTuckerTree<T>::orthogonalize_svd(std::vector
+                                  <flens::DenseVector
+                                  <flens::Array<T> > >& sigmas,
+                                  bool isorth)
+{
+    if (!sigmas.size()) sigmas.resize(dim());
+    assert(sigmas.size()==(unsigned) dim());
+
+    using flens::_;
+
+    HTuckerTree<T> Stree;
+    Stree.set_tree(*this);
+    if (!isorth) {
+       this->orthogonalize();
+    }
+
+    HTuckerTree<T> gram = gramians_orthogonal(*this);
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U(1,1);
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt(1,1);
+    flens::DenseVector<flens::Array<T> > s;
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+
+    {
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITs= Stree.getGeneralTree().begin();
+    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++,TITs++){
+		flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+        if (TITgram.getNode()->isLeaf()) {
+            sigmas[TITgram.getNode()
+                   ->getContent()->getIndex()[0]-1].resize(s.length());
+            sigmas[TITgram.getNode()->getContent()->getIndex()[0]-1] = s;
+        }
+		TITs.getNode()->getContent()->setUorB(U);
+	}
+    }
+
+    {
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITs = Stree.getGeneralTree().begin();
+	for(; TIT <= this->getGeneralTree().end(); TIT++,TITs++){
+		node = TIT.getNode();
+		
+		if(node->isLeaf()){
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
+			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
+			node->getContent()->setUorB(tmp);
+			node->getContent()->setNumRows(tmp.numCols());
+		} else {
+			int rcnumel = node->getContent()->getRightChildNumRows();
+			int lcnumel = node->getContent()->getLeftChildNumRows();
+			
+			int numel = node->getContent()->getNumRows();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITs.getNode()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITs.getNode()->getfirstChild()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITs.getNode()->getlastChild()->getContent()->getUorB();
+			int newnumel = Sref.numCols();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
+			
+			for(int l = 1; l <= newnumel; ++l){
+				for(int j = 1; j <= rcnumel; ++j){
+					for(int k = 1; k <= lcnumel; ++k){
+						T sum = 0.0;
+						for(int i = 1; i <= numel; ++i){
+							sum += Bref((i-1)*rcnumel + j,k)*Sref(i,l);
+						}
+						tmp((l-1)*rcnumel + j,k) = sum;
+					}
+				}
+			}
+			//hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
+			for(int i = 1; i <= newnumel; ++i){
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1;
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,tmp(_((i-1)*rcnumel+1,i*rcnumel),_),Slref,0.0,tmp1);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2;
+				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Srref,tmp1,0.0,tmp2);
+				newB(_((i-1)*Srref.numCols()+1,i*Srref.numCols()),_) = tmp2;
+			}
+			node->getContent()->setUorB(newB);
+			node->getContent()->setNumRows(newnumel);
+			node->getContent()->setLeftChildNumRows(Slref.numCols());
+			node->getContent()->setRightChildNumRows(Srref.numCols());
+		
+		}
+		
+		
+	}
+    }
+}
+
+
+
+
+template <typename T>
 T
 HTuckerTree<T>::L2norm() const{
 	T erg = ScalarProduct(*this);
@@ -877,6 +1016,15 @@ HTuckerTree<T>::setdim(const int dim){
 	d = dim;
 }
 
+
+template <typename T>
+HTuckerTree<T>&
+HTuckerTree<T>::operator=(const HTuckerTree<T>& copy)
+{
+    d = copy.dim();
+    tree = copy.getGeneralTree();
+    return *this;
+}
 
 
 template <typename T>
@@ -2361,7 +2509,7 @@ HTuckerTree<T>::truncate(const int rank, bool isorth)
 		node = TIT.getNode();
 		
 		if(node->isLeaf()){
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
 			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
 			node->getContent()->setUorB(tmp);
 			node->getContent()->setNumRows(tmp.numCols());
@@ -2391,9 +2539,9 @@ HTuckerTree<T>::truncate(const int rank, bool isorth)
 			//hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
 			for(int i = 1; i <= newnumel; ++i){
-				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1(1,1);
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1;
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,tmp(_((i-1)*rcnumel+1,i*rcnumel),_),Slref,0.0,tmp1);
-				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2(Srref.numCols(),tmp1.numRows());
+				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2;
 				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Srref,tmp1,0.0,tmp2);
 				newB(_((i-1)*Srref.numCols()+1,i*Srref.numCols()),_) = tmp2;
 			}
@@ -2414,7 +2562,6 @@ template <typename T>
 void
 HTuckerTree<T>::truncate(double eps, bool isorth)
 {
-
     using flens::_;
     eps *= eps;
 
@@ -2437,7 +2584,7 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
     std::vector<flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> >>
                                                         Us;
     int count = 0;
-    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++,TITs++){
+    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++){
         flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
         Us.push_back(U);
         svals.push_back(s);
@@ -2463,18 +2610,16 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
 
     flens::DenseVector<flens::Array<std::size_t> > dels(svals.size());
     for (int i=1; i<=count; ++i) {
-        int left  = 1;
         int right = 0;
-        for (std::size_t j=0; j<=svals.size(); ++j) {
+        for (std::size_t j=0; j<svals.size(); ++j) {
             right += svals[j].length();
-            if (rho(i)>=left && rho(i)<=right) {
+            if (rho(i)<=right) {
                 ++dels(j+1);
                 break;
             }
         }
     }
 
-    TITs= Stree.getGeneralTree().begin();
     for(std::size_t i=1; TITs <= Stree.getGeneralTree().end();
                          TITs++, ++i){
         int rank = svals[i-1].length() - dels(i);
