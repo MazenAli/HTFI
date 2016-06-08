@@ -82,7 +82,9 @@ public:
 
 	T average_rank() const;
 
-	T max_rank() const;
+	int max_rank() const;
+
+	int max_n() const;
 
 	T effective_rank() const;
 
@@ -98,6 +100,18 @@ public:
     void
     truncate(double eps, bool isorth = false);
 
+    void
+    truncate_hsvd(const T eps);
+
+    void
+    truncate(const HTuckerTree<T>& gram, const int rank);
+
+    void
+    truncate(const HTuckerTree<T>& gram,
+             const flens::DenseVector<flens::Array<T> >& eps);
+    void
+    truncate_elementary(const HTuckerTree<T>& gram,
+                        const flens::DenseVector<flens::Array<T> >& eps);
 
 	T Linfnorm(HTuckerTree<T> & anothertree,const DimensionIndex & minval,const DimensionIndex & maxval,const int n); //not const because evaluation of this and anothertree is needed!
 
@@ -122,8 +136,15 @@ public:
 
 	void setdim(const int dim);
 
+    void
+    scal(T alpha);
+
+    int
+    depth() const;
+
     HTuckerTree<T>&
     operator=(const HTuckerTree<T>& copy);
+
 };
 
 
@@ -135,6 +156,10 @@ template <typename T>
 HTuckerTree<T>
 reapproximate(HTuckerTree<T> & tree1, const int rank,const int l = 3);
 
+template <typename T>
+HTuckerTree<T>   add_truncate(const HTuckerTree<T> & tree1,
+                              const HTuckerTree<T> & tree2,
+                              const double eps);
 
 template <typename T>
 HTuckerTree<T>   operator+(const HTuckerTree<T> & tree1, const HTuckerTree<T> & tree2);
@@ -177,6 +202,9 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T> & tree);
 
 template <typename T>
 HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree);
+
+template <typename T>
+HTuckerTree<T> gramians_elementary(const HTuckerTree<T>& tree);
 
 template <typename T>
 HTuckerTree<T> truncate(const HTuckerTree<T> & tree, const int rank);

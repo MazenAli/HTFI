@@ -2,11 +2,13 @@
 #include <vector>
 #include <cstddef>
 #include <cassert>
+#include <cmath>
+#include <ctime>
 
 namespace htucker{
 
 template <typename T>
-void 
+void
 HTuckerTree<T>::init(const int _d, const double _split){
 	assert(0 <= _split && _split <= 1);
 	
@@ -15,6 +17,10 @@ HTuckerTree<T>::init(const int _d, const double _split){
 	
 	HTuckerTreeNode<T> rootnode(all);
 	
+    rootnode.setNumRows(0);
+    rootnode.setLeftChildNumRows(0);
+    rootnode.setRightChildNumRows(0);
+
 	tree = GeneralTree<HTuckerTreeNode<T> >(rootnode);
 	
 	GeneralTreeNode<HTuckerTreeNode<T> > * node = tree.root;
@@ -41,6 +47,15 @@ HTuckerTree<T>::init(const int _d, const double _split){
 
 			HTuckerTreeNode<T> fino(fi);
 			HTuckerTreeNode<T> lano(la);
+
+            fino.setNumRows(0);
+            fino.setLeftChildNumRows(0);
+            fino.setRightChildNumRows(0);
+
+            lano.setNumRows(0);
+            lano.setLeftChildNumRows(0);
+            lano.setRightChildNumRows(0);
+
 			node->appendChild(fino);
 			node->appendChild(lano);
 			if(nextlev == 0){
@@ -285,6 +300,7 @@ HTuckerTree<T>::evaluate(const DimensionIndex &index) const{
 			//std::cout << "inner " << std::endl;
 			//std::cout << node->getContent()->getIndex() << std::endl;
 			int numblocks = save->getNumRows();
+            evaluate.resize(0);
 			evaluate = flens::DenseVector<flens::Array<T> >(numblocks,1);
 			int rcnumel = save->getRightChildNumRows();
 
@@ -714,105 +730,112 @@ template <typename T>
 T
 HTuckerTree<T>::L2norm() const{
 	T erg = ScalarProduct(*this);
-	//std::cout << "htuckertree.tcc in L2norm: ScalarProduct: " << erg << std::endl;
 	return sqrt(fabs(erg));
 }
 
+
 template <typename T>
 T
-HTuckerTree<T>::L2normorthogonal() const{
-	T erg;
-	/*flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U,VT;
-	flens::DenseVector<flens::Array<T> > s;
-	svd(tree.root->getContent()->getUorB(),s,U,VT);
-	for(int i = 1; i <= s.length(); ++i){
-		erg += s(i);
-	}
-	return sqrt(erg);*/
-	for(int i = 1; i <= tree.root->getContent()->getUorB().numRows(); ++i){
-		for(int j = 1; j<= tree.root->getContent()->getUorB().numCols(); ++j){
-		erg += ( tree.root->getContent()->getUorB())(i,j)*( tree.root->getContent()->getUorB())(i,j);
-		}
-	}
-	return sqrt(erg);
+HTuckerTree<T>::L2normorthogonal() const
+{
+    return flens::blas::nrm2(tree.root->getContent()->getUorB().vectorView());
 }
 
+
 template <typename T>
 T
-HTuckerTree<T>::ScalarProduct(const HTuckerTree<T> & anothertree) const{
+HTuckerTree<T>::ScalarProduct(const HTuckerTree<T> & anothertree) const
+{
     using flens::_;
 
-	assert(this->getGeneralTree().root->getContent()->getIndex().length() == anothertree.getGeneralTree().root->getContent()->getIndex().length());
-	
-	GeneralTree<HTuckerTreeNode<T> > tmp = anothertree.getGeneralTree();
-	GeneralTreeNode<HTuckerTreeNode<T> > *nodethis, *nodeanother, *nodetmp;
-	for(GeneralTreeIterator<HTuckerTreeNode<T> > TITthis = tree.end(),
-		                                         TITanother = anothertree.getGeneralTree().end(),
-		                                         TITtmp = tmp.end(); TITthis >= tree.begin(); TITthis--,TITanother--,TITtmp--){
-	
-		nodethis = TITthis.getNode();
-		nodeanother = TITanother.getNode();
-		nodetmp = TITtmp.getNode();
-		//std::cout << "htuckertree.tcc:  ScalarProduct: " << nodethis->getContent()->getIndex() << std::endl;
-		if(nodethis->isLeaf()){
-			//std::cout << " " << nodethis->getContent()->getUorB().numRows()  << "== " <<  nodeanother->getContent()->getUorB().numRows()  << std::endl;
-			assert(nodethis->getContent()->getUorB().numRows() == nodeanother->getContent()->getUorB().numRows());
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmpM;
-			
-			tmpM = flens::transpose(nodethis->getContent()->getUorB())*nodeanother->getContent()->getUorB();
-			nodetmp->getContent()->setUorB(tmpM);
-		} else{
-			// the resalt has to be saved in non-blockwise format, because we can than multiply more easily
-			// i.e. at this point we can assume that nodeanother and notethis have blockwise format and nodetemp non-blockwise format
-			int numrows_left = nodetmp->getfirstChild()->getContent()->getUorB().numRows();
-			int numrows_right = nodetmp->getlastChild()->getContent()->getUorB().numRows();
-			int numcols_left = nodetmp->getfirstChild()->getContent()->getUorB().numCols();
-			int numcols_right = nodetmp->getlastChild()->getContent()->getUorB().numCols();
-			int anothernumcols = nodeanother->getContent()->getUorB().numCols();
-			//std::cout << "nodethis->getContent()->UorB_numel " << nodethis->getContent()->UorB_numel << std::endl;
-			//std::cout << "nodeanother->getContent()->UorB_numel " << nodeanother->getContent()->UorB_numel << std::endl;
-			int anothernumel = nodeanother->getContent()->getNumRows();
-			int anotherrcnumel = nodeanother->getContent()->getRightChildNumRows();
-			int thisrcnumel = nodethis->getContent()->getRightChildNumRows();
-			int thisnumel = nodethis->getContent()->getNumRows();
+    typedef flens::GeMatrix<flens::FullStorage<T, cxxblas::ColMajor> > Matrix;
 
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tensorresult(nodethis->getContent()->getNumRows(),nodeanother->getContent()->getNumRows());
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &tmplcUorB = nodetmp->getlastChild()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &tmpfcUorB = nodetmp->getfirstChild()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &anotherUorB = nodeanother->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &thisUorB = nodethis->getContent()->getUorB();
-			
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > intermediateresult,intermediateresult2;
-			//std::cout << "thisUorb: " << thisUorB << std::endl;			
-			for(int i = 1; i<=anothernumel ;++i){
-				intermediateresult =  tmplcUorB * anotherUorB(_((i-1)* anotherrcnumel + 1 ,i * anotherrcnumel),_);
-				intermediateresult2 = intermediateresult * flens::transpose(tmpfcUorB);
-				flens::DenseVector<flens::Array<T> > rhresult(intermediateresult2.numRows() * intermediateresult2.numCols());
-				for(int j = 1; j <= intermediateresult2.numCols(); ++j){
-					rhresult(_((j-1)*intermediateresult2.numRows() + 1, j*intermediateresult2.numRows())) = intermediateresult2(_,j);
-				}
-				//std::cout << "hier" << std::endl;
+    assert(this->getGeneralTree().root->getContent()->getIndex().length() ==
+    anothertree.getGeneralTree().root->getContent()->getIndex().length());
 
-				for(int j = 1; j<= thisnumel; ++j){
-					tensorresult(j,i) = 0;
-					for(int k = 1; k <= rhresult.length(); ++k){
-						/*if(nodethis->isRoot()){
-							std::cout << "rhresult.length() = " << rhresult.length() << std::endl;
-							std::cout << "nodethis->getContent()->UorB_numel = " << thisnumel << std::endl;
+    GeneralTree<HTuckerTreeNode<T> > tmp = anothertree.getGeneralTree();
+    GeneralTreeNode<HTuckerTreeNode<T> > *nodethis, *nodeanother, *nodetmp;
+    for (GeneralTreeIterator<HTuckerTreeNode<T> >
+        TITthis = tree.end(),
+        TITanother = anothertree.getGeneralTree().end(),
+        TITtmp = tmp.end(); TITthis >= tree.begin();
+        TITthis--,TITanother--,TITtmp--) {
 
-							std::cout << "nodethis->getContent()->UorB_rcnumel = " << thisrcnumel << std::endl;
-							std::cout << "tensorresult( " << j << " , " << i << ") += rhresult(" << k << ")*(nodethis->getContent()->getUorB())(" << (j-1)*thisnumel + ((k-1) % thisnumel) + 1 << " ," << (int)(((k-1) - (k-1) % thisnumel)/thisnumel) + 1 << ") " << std::endl;
-						}*/
-						tensorresult(j,i) += rhresult(k)*(thisUorB)((j-1)*thisrcnumel + ((k-1) % thisrcnumel) + 1, (int)(((k-1) - (k-1) % thisrcnumel)/thisrcnumel) + 1);
-					}
-				}
-			}
-			
-			nodetmp->getContent()->setUorB(tensorresult);
-		}
-	}
-	//std::cout << "htuckertree.tcc, ScalarProduct return " << (tmp.root->getContent()->getUorB())(1,1) << std::endl;
-	return (tmp.root->getContent()->getUorB())(1,1);
+        nodethis = TITthis.getNode();
+        nodeanother = TITanother.getNode();
+        nodetmp = TITtmp.getNode();
+
+        if (nodethis->isLeaf()) {
+            assert(nodethis->getContent()->getUorB().numRows() ==
+                   nodeanother->getContent()->getUorB().numRows());
+            Matrix tmpM;
+            Matrix& Bleft  = nodethis->getContent()->getUorB();
+            Matrix& Bright = nodeanother->getContent()->getUorB();
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., Bleft, Bright,
+                            0., tmpM);
+            nodetmp->getContent()->setUorB(tmpM);
+
+        } else {
+            int rightnumel   = nodeanother->getContent()->getNumRows();
+            int rightrcnumel = nodeanother->getContent()
+                               ->getRightChildNumRows();
+
+            int leftnumel    = nodethis->getContent()->getNumRows();
+            int leftrcnumel  = nodethis->getContent()
+                               ->getRightChildNumRows();
+            int leftlcnumel  = nodethis->getContent()
+                               ->getLeftChildNumRows();
+
+            Matrix tensorblock(leftrcnumel*rightnumel, leftlcnumel);
+            Matrix tensor(leftrcnumel*leftlcnumel, rightnumel);
+            Matrix tmp(rightrcnumel, leftlcnumel);
+
+            Matrix& Bleft  = nodethis->getContent()->getUorB();
+            Matrix& Bright = nodeanother->getContent()->getUorB();
+
+            Matrix Bleftnonblock(leftrcnumel*leftlcnumel, leftnumel);
+
+            Matrix& Ml = nodetmp->getfirstChild()->getContent()->getUorB();
+            Matrix& Mr = nodetmp->getlastChild()->getContent()->getUorB();
+
+            Matrix result(leftnumel, rightnumel);
+
+            for (int i=1; i<=rightnumel; ++i) {
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                1., Bright(_((i-1)*rightrcnumel+1,
+                                              i*rightrcnumel), _),
+                                Ml, 0., tmp);
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1., Mr,
+                                tmp, 0., tensorblock(_((i-1)*leftrcnumel+1,
+                                                        i*leftrcnumel), _));
+            }
+
+            for (int i=1; i<=leftnumel; ++i) {
+                for (int j=1; j<=leftrcnumel; ++j) {
+                    Bleftnonblock(_((j-1)*leftlcnumel+1,
+                                     j*leftlcnumel), i) =
+                    Bleft((i-1)*leftrcnumel+j, _);
+                }
+            }
+
+            for (int i=1; i<=rightnumel; ++i) {
+                for (int j=1; j<=leftrcnumel; ++j) {
+                    tensor(_((j-1)*leftlcnumel+1, j*leftlcnumel), i) =
+                    tensorblock((i-1)*leftrcnumel+j, _);
+                }
+            }
+
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., Bleftnonblock,
+                            tensor, 0., result);
+
+            nodetmp->getContent()->setUorB(result);
+        }
+    }
+
+    return (tmp.root->getContent()->getUorB())(1,1);
 }
 
 
@@ -879,11 +902,11 @@ HTuckerTree<T>::average_rank() const{
 }
 
 template <typename T>
-T 
+int
 HTuckerTree<T>::max_rank() const{
-	T rank = 0.0;
+	int rank = 0;
 	for(GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.end(); TIT >= tree.begin(); TIT--){
-		int newrank; 
+		int newrank;
 		if(TIT.getNode()->isLeaf()){
 			 newrank = TIT.getNode()->getContent()->getUorB().numCols();
 		} else  {
@@ -893,8 +916,29 @@ HTuckerTree<T>::max_rank() const{
 			rank = newrank;
 		}
 	}
-	return rank +0.0;
+	return rank;
 }
+
+
+template <typename T>
+int
+HTuckerTree<T>::max_n() const{
+    int rank = 0;
+    for(GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.end(); TIT >= tree.begin(); TIT--){
+        int newrank;
+        if(TIT.getNode()->isLeaf()){
+            newrank = TIT.getNode()->getContent()->getUorB().numRows();
+        } else {
+            break;
+        }
+        if(newrank > rank){
+            rank = newrank;
+        }
+    }
+
+    return rank;
+}
+
 
 template <typename T>
 T 
@@ -1014,6 +1058,26 @@ template <typename T>
 void
 HTuckerTree<T>::setdim(const int dim){
 	d = dim;
+}
+
+
+template <typename T>
+void
+HTuckerTree<T>::scal(T alpha)
+{
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+
+    Matrix& B = const_cast<Matrix&>
+                (getGeneralTree().root->getContent()->getUorB());
+    B *= alpha;
+}
+
+
+template <typename T>
+int
+HTuckerTree<T>::depth() const
+{
+    return this->getGeneralTree().end().getNode()->level();
 }
 
 
@@ -1766,6 +1830,1004 @@ reapproximate(HTuckerTree<T> & tree1, const int rank, const int l){
 }
 
 
+
+template <typename T>
+HTuckerTree<T>
+add_truncate(const HTuckerTree<T> & tree1,
+             const HTuckerTree<T> & tree2,
+             const double eps)
+{
+    HTuckerTree<T> tree = tree1+tree2;
+
+    std::cout << "add_truncate rank " << tree.max_rank() << std::endl;
+
+    using flens::_;
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+    typedef flens::DenseVector<flens::Array<T> >                      Vec;
+    typedef flens::DenseVector<flens::Array<int> >                    IntVec;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node, *nodem, *nodeleft, *noderight;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree);
+    HTuckerTree<T> Mtree;
+    Mtree.set_tree(tree);
+
+    auto TIT      = tree.getGeneralTree().end();
+    auto TITleft  = tree1.getGeneralTree().end();
+    auto TITright = tree2.getGeneralTree().end();
+    auto TITm     = Mtree.getGeneralTree().end();
+    for (; TIT >= tree.getGeneralTree().begin(); TIT--, TITm--,
+                                                 TITleft--, TITright--) {
+        node      = TIT.getNode();
+        nodem     = TITm.getNode();
+        nodeleft  = TITleft.getNode();
+        noderight = TITright.getNode();
+        if(node->isLeaf()) {
+            Matrix tmp;
+            Matrix& U = node->getContent()->getUorB();
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., U, U, 0., tmp);
+            nodem->getContent()->setUorB(tmp);
+        } else if (node->isInner()) {
+            Matrix& Mr = nodem->getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getfirstChild()->getContent()->getUorB();
+
+            Matrix& Bt     = node->getContent()->getUorB();
+            Matrix& Bleft  = nodeleft->getContent()->getUorB();
+            Matrix& Bright = noderight->getContent()->getUorB();
+
+            int numel = node->getContent()->getNumRows();
+
+            int rcnumelleft  = nodeleft->getContent()->getRightChildNumRows();
+            int rcnumelright = noderight->getContent()->getRightChildNumRows();
+            int lcnumelleft  = nodeleft->getContent()->getLeftChildNumRows();
+            int lcnumelright = noderight->getContent()->getLeftChildNumRows();
+
+            int numelleft  = nodeleft->getContent()->getNumRows();
+            int numelright = noderight->getContent()->getNumRows();
+
+            int nrleft  = Ml.numRows();
+            int nrright = Mr.numRows();
+
+            Matrix tensor(nrright*(numelleft+numelright), nrleft);
+            Matrix tmp(std::max(rcnumelleft, rcnumelright), nrleft);
+            /* Compute tensor product */
+            for (int i=1; i<=numelleft; ++i) {
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                1.,
+                                Bleft(_((i-1)*rcnumelleft+1, i*rcnumelleft),
+                                      _),
+                                Ml(_, _(1, lcnumelleft)),
+                                0., tmp(_(1, rcnumelleft), _));
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1.,
+                                Mr(_, _(1, rcnumelleft)),
+                                tmp(_(1, rcnumelleft), _),
+                                0., tensor(_((i-1)*nrright+1, i*nrright), _));
+            }
+
+            for (int i=1; i<=numelright; ++i) {
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                1.,
+                                Bright(_((i-1)*rcnumelright+1, i*rcnumelright),
+                                       _),
+                                Ml(_, _(lcnumelleft+1,
+                                        lcnumelleft+lcnumelright)),
+                                0., tmp(_(1, rcnumelright), _));
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1.,
+                                Mr(_, _(rcnumelleft+1,
+                                        rcnumelleft+rcnumelright)),
+                                tmp(_(1, rcnumelright), _),
+                                0., tensor(_(numelleft*nrright+(i-1)*nrright+1,
+                                             numelleft*nrright+i*nrright), _));
+            }
+
+            /* Compute B_t^H*tensor */
+            Matrix B11((lcnumelleft+lcnumelright)*rcnumelleft, numelleft);
+            Matrix B22((lcnumelleft+lcnumelright)*rcnumelright, numelright);
+
+            Matrix Mt(numel, numel);
+            Matrix tensornonblock(nrright*nrleft, numelleft+numelright);
+
+            for (int i=1; i<=numelleft+numelright; ++i) {
+                for (int j=1; j<=nrright; ++j) {
+                    tensornonblock(_((j-1)*nrleft+1, j*nrleft), i) =
+                    tensor((i-1)*nrright+j, _);
+                }
+            }
+
+            for (int i=1; i<=numelleft; ++i) {
+                for (int j=1; j<=rcnumelleft; ++j) {
+                    B11(_((j-1)*(lcnumelleft+lcnumelright)+1,
+                           j*(lcnumelleft+lcnumelright)), i) =
+                    Bt((i-1)*(rcnumelleft+rcnumelright)+j, _);
+                }
+            }
+
+            for (int i=1; i<=numelright; ++i) {
+                for (int j=1; j<=rcnumelright; ++j) {
+                    B22(_((j-1)*(lcnumelleft+lcnumelright)+1,
+                           j*(lcnumelleft+lcnumelright)), i) =
+                    Bt((rcnumelleft+rcnumelright)*numelleft+rcnumelleft+
+                       (i-1)*(rcnumelleft+rcnumelright)+j, _);
+                }
+            }
+
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., B11,
+                            tensornonblock(_(1,
+                            (lcnumelleft+lcnumelright)*rcnumelleft), _),
+                            0., Mt(_(1, numelleft), _));
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., B22,
+                            tensornonblock(
+                            _((lcnumelleft+lcnumelright)*rcnumelleft+1,
+                            (lcnumelleft+lcnumelright)*
+                            (rcnumelleft+rcnumelright)), _),
+                            0., Mt(_(numelleft+1, numelleft+numelright), _));
+
+            nodem->getContent()->setUorB(Mt);
+        } else {
+            Matrix& Mr = nodem->getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getfirstChild()->getContent()->getUorB();
+
+            Matrix& Bt     = node->getContent()->getUorB();
+            Matrix& Bleft  = nodeleft->getContent()->getUorB();
+            Matrix& Bright = noderight->getContent()->getUorB();
+
+            int numel = node->getContent()->getNumRows();
+
+            int rcnumelleft  = nodeleft->getContent()->getRightChildNumRows();
+            int rcnumelright = noderight->getContent()->getRightChildNumRows();
+            int lcnumelleft  = nodeleft->getContent()->getLeftChildNumRows();
+            int lcnumelright = noderight->getContent()->getLeftChildNumRows();
+
+            int nrleft  = Ml.numRows();
+            int nrright = Mr.numRows();
+
+            Matrix tensor(nrright, nrleft);
+            /* Compute tensor product */
+            Matrix tmp(rcnumelleft+rcnumelright, nrleft);
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                            1.,
+                            Bleft,
+                            Ml(_, _(1, lcnumelleft)),
+                            0., tmp(_(1, rcnumelleft), _));
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                            1.,
+                            Bright,
+                            Ml(_, _(lcnumelleft+1, lcnumelleft+lcnumelright)),
+                            0., tmp(_(rcnumelleft+1,
+                                      rcnumelleft+rcnumelright), _));
+
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                            1.,
+                            Mr(_, _(1, rcnumelleft)),
+                            tmp(_(1, rcnumelleft), _),
+                            0., tensor);
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                            1.,
+                            Mr(_, _(rcnumelleft+1, rcnumelleft+rcnumelright)),
+                            tmp(_(rcnumelleft+1, rcnumelleft+rcnumelright), _),
+                            1., tensor);
+
+            /* Compute B_t^H*tensor */
+            Matrix Bnonblock((rcnumelleft+rcnumelright)*
+                             (lcnumelleft+lcnumelright), 1);
+            Matrix Mt(numel, numel);
+            Matrix tensornonblock(nrright*nrleft, 1);
+
+            for (int j=1; j<=nrright; ++j) {
+                tensornonblock(_((j-1)*nrleft+1, j*nrleft), 1) =
+                tensor(j, _);
+            }
+
+            for (int i=1; i<=rcnumelleft+rcnumelright; ++i) {
+                Bnonblock(_((i-1)*(lcnumelleft+lcnumelright)+1,
+                             i*(lcnumelleft+lcnumelright)), 1) =
+                Bt(i, _);
+            }
+
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., Bnonblock,
+                            tensornonblock,
+                            0., Mt);
+
+            nodem->getContent()->setUorB(Mt);
+        }
+    }
+
+    TIT          = tree.getGeneralTree().begin();
+    auto GramTIT = gram.getGeneralTree().begin();
+    TITm         = Mtree.getGeneralTree().begin();
+    TITleft      = tree1.getGeneralTree().begin();
+    TITright     = tree2.getGeneralTree().begin();
+    for(; TIT <= tree.getGeneralTree().end(); TIT++, TITm++, GramTIT++,
+                                              TITleft++, TITright++){
+        node      = TIT.getNode();
+        nodem     = TITm.getNode();
+        gramnode  = GramTIT.getNode();
+        nodeleft  = TITleft.getNode();
+        noderight = TITright.getNode();
+        if(node->isRoot()){
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+        } else if (node->getParent()->isRoot()) {
+
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+
+            int rcnumelleft  = nodeleft->getParent()->
+                               getContent()->getRightChildNumRows();
+            int rcnumelright = noderight->getParent()->
+                               getContent()->getRightChildNumRows();
+            int lcnumelleft  = nodeleft->getParent()->
+                               getContent()->getLeftChildNumRows();
+            int lcnumelright = noderight->getParent()->
+                               getContent()->getLeftChildNumRows();
+
+            Matrix& Bleft  = nodeleft->getParent()->getContent()->getUorB();
+            Matrix& Bright = noderight->getParent()->getContent()->getUorB();
+
+            Matrix& Mr = nodem->getParent()->
+                         getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getParent()->
+                         getfirstChild()->getContent()->getUorB();
+
+            Matrix G(numel,numel);
+            if (node==node->getParent()->getlastChild()) {
+                /* G_tr */
+
+                /* Compute tensor product */
+                Matrix tensor(parentlcnumel, parentrcnumel);
+                Vec tensorblock(lcnumelleft+lcnumelright);
+
+                for (int i=1; i<=rcnumelleft; ++i) {
+                    flens::blas::mv(cxxblas::NoTrans,
+                                    1., Ml(_, _(1, lcnumelleft)),
+                                    Bleft(i, _), 0.,
+                                    tensorblock);
+                    tensor(_, i) = tensorblock;
+                }
+
+                for (int i=1; i<=rcnumelright; ++i) {
+                    flens::blas::mv(cxxblas::NoTrans,
+                                    1., Ml(_, _(lcnumelleft+1,
+                                                lcnumelleft+lcnumelright)),
+                                    Bright(i, _), 0.,
+                                    tensorblock);
+                    tensor(_, rcnumelleft+i) = tensorblock;
+                }
+
+                /* Compute G_tr */
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1., Bleft,
+                                tensor(_(1, lcnumelleft), _),
+                                0.,
+                                G(_(1, rcnumelleft), _));
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1., Bright,
+                                tensor(_(lcnumelleft+1,
+                                         lcnumelleft+lcnumelright), _),
+                                0.,
+                                G(_(rcnumelleft+1, rcnumelleft+rcnumelright),
+                                  _));
+            } else {
+                /* G_tl */
+
+                /* Compute tensor product */
+                Matrix tensor(parentrcnumel, parentlcnumel);
+                Vec tensorblock(rcnumelleft+rcnumelright);
+
+                for (int i=1; i<=lcnumelleft; ++i) {
+                    flens::blas::mv(cxxblas::NoTrans,
+                                    1., Mr(_, _(1, rcnumelleft)),
+                                    Bleft(_, i), 0.,
+                                    tensorblock);
+                    tensor(_, i) = tensorblock;
+                }
+
+                for (int i=1; i<=lcnumelright; ++i) {
+                    flens::blas::mv(cxxblas::NoTrans,
+                                    1., Mr(_, _(rcnumelleft+1,
+                                                rcnumelleft+rcnumelright)),
+                                    Bright(_, i), 0.,
+                                    tensorblock);
+                    tensor(_, lcnumelleft+i) = tensorblock;
+                }
+
+                /* Compute G_tl */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., Bleft,
+                                tensor(_(1, rcnumelleft), _),
+                                0.,
+                                G(_(1, lcnumelleft),
+                                  _));
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., Bright,
+                                tensor(_(rcnumelleft+1,
+                                         rcnumelleft+rcnumelright), _),
+                                0.,
+                                G(_(lcnumelleft+1, lcnumelleft+lcnumelright),
+                                  _));
+            }
+            gramnode->getContent()->setUorB(G);
+
+        } else {
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentnumel   = parent->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+            Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
+
+            int rcnumelleft  = nodeleft->getParent()->
+                               getContent()->getRightChildNumRows();
+            int rcnumelright = noderight->getParent()->
+                               getContent()->getRightChildNumRows();
+            int lcnumelleft  = nodeleft->getParent()->
+                               getContent()->getLeftChildNumRows();
+            int lcnumelright = noderight->getParent()->
+                               getContent()->getLeftChildNumRows();
+
+            int numelleft  = nodeleft->getParent()->getContent()->getNumRows();
+            int numelright = noderight->getParent()->
+                             getContent()->getNumRows();
+
+            Matrix& Bleft  = nodeleft->getParent()->getContent()->getUorB();
+            Matrix& Bright = noderight->getParent()->getContent()->getUorB();
+
+            Matrix& Mr = nodem->getParent()->
+                         getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getParent()->
+                         getfirstChild()->getContent()->getUorB();
+
+            Matrix G(numel,numel);
+            if (node==node->getParent()->getlastChild()) {
+                /* G_tr */
+                Matrix B11((lcnumelleft+lcnumelright)*numelleft,
+                            rcnumelleft);
+                Matrix B22((lcnumelleft+lcnumelright)*numelright,
+                            rcnumelright);
+                for (int i=1; i<=numelleft; ++i) {
+                    for (int j=1; j<=rcnumelleft; ++j) {
+                        B11(_((i-1)*(lcnumelleft+lcnumelright)+1,
+                              (i-1)*(lcnumelleft+lcnumelright)+
+                               lcnumelleft), j) =
+                        Bleft((i-1)*rcnumelleft+j, _);
+                    }
+                }
+
+                for (int i=1; i<=numelright; ++i) {
+                    for (int j=1; j<=rcnumelright; ++j) {
+                        B22(_((i-1)*(lcnumelleft+lcnumelright)+
+                               +lcnumelleft+1,
+                              i*(lcnumelleft+lcnumelright)), j) =
+                        Bright((i-1)*rcnumelright+j, _);
+                    }
+                }
+
+                /* Compute tensor product */
+                Matrix B31blockleft(lcnumelleft, numelleft);
+                Matrix B31blockright(lcnumelright, numelright);
+                Matrix tensor(parentnumel*parentlcnumel, parentrcnumel);
+                Matrix tensorblock(lcnumelleft+lcnumelright, parentnumel);
+
+                Matrix tmp(std::max(lcnumelleft, lcnumelright), parentnumel);
+                for (int i=1; i<=rcnumelleft; ++i) {
+                    for (int j=1; j<=numelleft; ++j) {
+                        B31blockleft(_, j) =
+                        Bleft((j-1)*rcnumelleft+i, _);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31blockleft,
+                                    parentG(_, _(1, numelleft)),
+                                    0., tmp(_(1, lcnumelleft), _));
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Ml(_, _(1, lcnumelleft)),
+                                    tmp(_(1, lcnumelleft), _), 0.,
+                                    tensorblock);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel), i) =
+                        tensorblock(_, j);
+                    }
+                }
+
+                for (int i=1; i<=rcnumelright; ++i) {
+                    for (int j=1; j<=numelright; ++j) {
+                        B31blockright(_, j) =
+                        Bright((j-1)*rcnumelright+i, _);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31blockright,
+                                    parentG(_,
+                                            _(numelleft+1,
+                                              numelleft+numelright)),
+                                    0., tmp(_(1, lcnumelright), _));
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Ml(_, _(lcnumelleft+1,
+                                                lcnumelleft+lcnumelright)),
+                                    tmp(_(1, lcnumelright), _), 0.,
+                                    tensorblock);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel),
+                                rcnumelleft+i) =
+                        tensorblock(_, j);
+                    }
+                }
+
+                /* Compute G_tr */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B11,
+                                tensor(_(1,
+                                        (lcnumelleft+lcnumelright)*numelleft),
+                                       _),
+                                0.,
+                                G(_(1, rcnumelleft),
+                                  _));
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B22,
+                                tensor(_((lcnumelleft+lcnumelright)*
+                                         numelleft+1,
+                                         (lcnumelleft+lcnumelright)*
+                                         (numelleft+numelright)), _),
+                                0.,
+                                G(_(rcnumelleft+1, rcnumelleft+rcnumelright),
+                                  _));
+            } else {
+                /* G_tl */
+                Matrix B11((rcnumelleft+rcnumelright)*numelleft,
+                            lcnumelleft);
+                Matrix B22((rcnumelleft+rcnumelright)*numelright,
+                            lcnumelright);
+                for (int i=1; i<=numelleft; ++i) {
+                    for (int j=1; j<=lcnumelleft; ++j) {
+                        B11(_((i-1)*(rcnumelleft+rcnumelright)+1,
+                              (i-1)*(rcnumelleft+rcnumelright)+
+                               rcnumelleft), j) =
+                        Bleft(_((i-1)*rcnumelleft+1, i*rcnumelleft), j);
+                    }
+                }
+
+                for (int i=1; i<=numelright; ++i) {
+                    for (int j=1; j<=lcnumelright; ++j) {
+                        B22(_((i-1)*(rcnumelleft+rcnumelright)+
+                               +rcnumelleft+1,
+                              i*(rcnumelleft+rcnumelright)), j) =
+                        Bright(_((i-1)*rcnumelright+1, i*rcnumelright), j);
+                    }
+                }
+
+                /* Compute tensor product */
+                Matrix B32blockleft(rcnumelleft, numelleft);
+                Matrix B32blockright(rcnumelright, numelright);
+                Matrix tensor(parentnumel*parentrcnumel, parentlcnumel);
+                Matrix tensorblock(rcnumelleft+rcnumelright, parentnumel);
+
+                Matrix tmp(std::max(rcnumelleft, rcnumelright), parentnumel);
+                for (int i=1; i<=lcnumelleft; ++i) {
+                    for (int j=1; j<=numelleft; ++j) {
+                        B32blockleft(_, j) =
+                        Bleft(_((j-1)*rcnumelleft+1, j*rcnumelleft),
+                               i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32blockleft,
+                                    parentG(_, _(1, numelleft)),
+                                    0., tmp(_(1, rcnumelleft), _));
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Mr(_, _(1, rcnumelleft)),
+                                    tmp(_(1, rcnumelleft), _),
+                                    0.,
+                                    tensorblock);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel), i) =
+                        tensorblock(_, j);
+                    }
+                }
+
+                for (int i=1; i<=lcnumelright; ++i) {
+                    for (int j=1; j<=numelright; ++j) {
+                        B32blockright(_, j) =
+                        Bright(_((j-1)*rcnumelright+1, j*rcnumelright), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32blockright,
+                                    parentG(_,
+                                            _(numelleft+1,
+                                              numelleft+numelright)),
+                                    0., tmp(_(1, rcnumelright), _));
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Mr(_, _(rcnumelleft+1,
+                                                rcnumelleft+rcnumelright)),
+                                    tmp(_(1, rcnumelright), _),
+                                    0.,
+                                    tensorblock);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel),
+                                lcnumelleft+i) =
+                        tensorblock(_, j);
+                    }
+                }
+
+                /* Compute G_tl */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B11,
+                                tensor(_(1,
+                                        (rcnumelleft+rcnumelright)*numelleft), _),
+                                0.,
+                                G(_(1, lcnumelleft),
+                                  _));
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B22,
+                                tensor(_((rcnumelleft+rcnumelright)*
+                                         numelleft+1,
+                                         (rcnumelleft+rcnumelright)*
+                                         (numelleft+numelright)), _),
+                                0.,
+                                G(_(lcnumelleft+1, lcnumelleft+lcnumelright),
+                                  _));
+            }
+            gramnode->getContent()->setUorB(G);
+        }
+    }
+
+    HTuckerTree<T> Rtree;
+    Rtree.set_tree(tree);
+
+    Vec s;
+    Matrix U, Vt;
+
+    std::vector<Vec> svals;
+    std::vector<int> ranks;
+
+    std::vector<Matrix> Us;
+    std::vector<Matrix> Urefs;
+    std::vector<Matrix> Qs;
+    std::vector<Matrix> QRmats;
+
+    TIT          = tree.getGeneralTree().end();
+    TITleft      = tree1.getGeneralTree().end();
+    TITright     = tree2.getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITR = Rtree.getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().end();
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > save;
+    GeneralTreeIterator<HTuckerTreeNode<T> > saver;
+    GeneralTreeIterator<HTuckerTreeNode<T> > savegram;
+    GeneralTreeIterator<HTuckerTreeNode<T> > saveleft;
+    GeneralTreeIterator<HTuckerTreeNode<T> > saveright;
+
+    T val = eps*eps/(T) (tree.depth()-1);
+    Vec eps2vec(tree.depth()-1);
+    eps2vec.fill(val);
+
+    int  depth    = TIT.getNode()->level();
+    int  level    = depth;
+    bool sorted   = false;
+    bool newlevel = true;
+    int  counter  = 0;
+    int  length   = 0;
+    for(;TIT >= tree.getGeneralTree().begin();){
+        node      = TIT.getNode();
+        nodeleft  = TITleft.getNode();
+        noderight = TITright.getNode();
+
+        if (node->level()==level) {
+
+            if (newlevel) {
+                save      = TIT;
+                saver     = TITR;
+                savegram  = TITgram;
+                saveleft  = TITleft;
+                saveright = TITright;
+
+                Us.clear();
+                Urefs.clear();
+                Qs.clear();
+                QRmats.clear();
+                svals.clear();
+                ranks.clear();
+
+                length   = 0;
+                sorted   = false;
+                newlevel = false;
+            }
+
+            if (node->isLeaf()) {
+                //compute QR-Decomposition
+                //hier ist die Kopie notwendig, weil qrf die Matrix verändert!
+                Matrix Uref = node->getContent()->getUorB();
+                int m = Uref.numRows();
+                int n = Uref.numCols();
+                Vec tau;
+                qrf(Uref,tau);
+
+                Matrix Q(m,std::min(m,n));
+                Q = Uref(_,_(1,std::min(m,n)));
+                orgqr(Q, tau);
+
+
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+                Matrix tmp1,tmp2,tmp3,tmp4;
+
+                tmp1 = Gref;
+
+                //hier berechnen wir R_t*G_t*R_t^T   => R_t entsprciht U_ref, wenn m > n dann ist die Matrix höher als Breit und enthält nur 0en, welche rausgeschmissen werden können
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,Uref(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                }
+
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Urefs.push_back(Uref);
+                Qs.push_back(Q);
+                svals.push_back(s);
+                length += s.length();
+            } else if (node->isRoot()) {
+                sorted = true;
+                --level;
+                continue;
+            } else {
+                //compute (Stl^T Rtl x Str^T Rtr) B_t
+                int numel        = node->getContent()->getNumRows();
+
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+                Matrix QRmat(leftMat.numCols()*rightMat.numCols(),numel);
+                Matrix tmp1,tmp2,tmp3,tmp4;
+                Matrix& Bleft  = nodeleft->getContent()->getUorB();
+                Matrix& Bright = noderight->getContent()->getUorB();
+
+                int rcnumelleft  = nodeleft->
+                                   getContent()->getRightChildNumRows();
+                int rcnumelright = noderight->
+                                   getContent()->getRightChildNumRows();
+                int lcnumelleft  = nodeleft->
+                                   getContent()->getLeftChildNumRows();
+                int lcnumelright = noderight->
+                                   getContent()->getLeftChildNumRows();
+
+                int numelleft  = nodeleft->getContent()->getNumRows();
+                int numelright = noderight->getContent()->getNumRows();
+
+                int lr = leftMat.numCols(); // wegen leftMat^T
+                int rr = rightMat.numCols();
+
+                for (int i = 1; i <= numelleft; ++i) {
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.,
+                                    Bleft(_((i-1)*rcnumelleft+1,
+                                             i*rcnumelleft), _),
+                                    leftMat(_(1, lcnumelleft), _), 0., tmp1);
+                    flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans, 1.,
+                                    rightMat(_(1, rcnumelleft), _),
+                                    tmp1, 0.,tmp2);
+                    //jetzt noch in die neue Matrix einsortieren...
+                    for(int j = 1; j <= lr; ++j){
+                        QRmat(_((j-1)*rr+1,j*rr),i) = tmp2(_,j);
+                    }
+                }
+
+                tmp1.resize(0, 0);
+
+                for (int i = 1; i <= numelright; ++i) {
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.,
+                                    Bright(_((i-1)*rcnumelright+1,
+                                              i*rcnumelright), _),
+                                    leftMat(_(lcnumelleft+1,
+                                              lcnumelleft+lcnumelright),_),
+                                         0., tmp1);
+                    flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans, 1.,
+                                    rightMat(_(rcnumelleft+1,
+                                               rcnumelleft+rcnumelright), _),
+                                    tmp1, 0.,tmp2);
+                    //jetzt noch in die neue Matrix einsortieren...
+                    for(int j = 1; j <= lr; ++j){
+                        QRmat(_((j-1)*rr+1,j*rr),numelleft+i) = tmp2(_,j);
+                    }
+                }
+
+                // jetzt die QR Zerlegung anwenden:
+                int m = QRmat.numRows();
+                int n = QRmat.numCols();
+                Vec tau;
+                qrf(QRmat,tau);
+
+                Matrix Q(m,std::min(m,n));
+                Q = QRmat(_,_(1,std::min(m,n)));
+                orgqr(Q,tau);
+
+                // Dann wie oben R_t G_t R_t^T berechnen
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+
+                tmp1.resize(0, 0);
+                tmp1 = Gref;
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2.resize(0, 0);
+                    tmp3.resize(0, 0);
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,QRmat(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2.resize(0, 0);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n 
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                }
+
+                //Svd wie oben
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Qs.push_back(Q);
+                QRmats.push_back(QRmat);
+                svals.push_back(s);
+                length += s.length();
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+            TITleft--;
+            TITright--;
+
+        } else if (!sorted) {
+            TIT      = save;
+            TITR     = saver;
+            TITgram  = savegram;
+            TITleft  = saveleft;
+            TITright = saveright;
+            sorted   = true;
+            counter  = 0;
+
+            Vec s_all(length);
+            int off = 1;
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                s_all(_(off,off+svals[i].length()-1)) = svals[i];
+                off += svals[i].length();
+            }
+
+
+            IntVec rho(s_all.length());
+            flens::sort(s_all, rho);
+            double delta = 0.;
+            double eps2  = eps2vec(depth-level+1);
+            off          = 0;
+            for (; off<s_all.length(); ++off) {
+                delta += s_all(off+1);
+                if (delta>eps2) break;
+            }
+
+            IntVec dels(svals.size());
+            for (int i=1; i<=off; ++i) {
+                int right = 0;
+                for (std::size_t j=0; j<svals.size(); ++j) {
+                    right += svals[j].length();
+                    if (rho(i)<=right) {
+                        ++dels(j+1);
+                        break;
+                    }
+                }
+            }
+
+            ranks.resize(svals.size());
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                int rank = svals[i].length() - dels(i+1);
+                if (rank==0) rank = 1;
+                ranks[i] = rank;
+            }
+
+            --level;
+        } else {
+            if (node->isLeaf()) {
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& Uref = Urefs[counter];
+                Matrix& U    = Us[counter];
+                Matrix& Q    = Qs[counter];
+                int rank     = ranks[counter];
+                int m        = node->getContent()->getUorB().numRows();
+                int n        = node->getContent()->getUorB().numCols();;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    Uref(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1.resize(0, 0);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U
+                           (_(1,n),_(1,std::min(U.numCols(),
+                                                rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U
+                                (_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                node->getContent()->setUorB(tmp1);
+                node->getContent()->setNumRows(tmp1.numCols());
+            } else if (node->isRoot()) {
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+                Matrix &Bref     = node->getContent()->getUorB();
+
+                int rcnumelleft  = nodeleft->
+                                   getContent()->getRightChildNumRows();
+                int rcnumelright = noderight->
+                                   getContent()->getRightChildNumRows();
+                int lcnumelleft  = nodeleft->
+                                   getContent()->getLeftChildNumRows();
+                int lcnumelright = noderight->
+                                   getContent()->getLeftChildNumRows();
+
+                Matrix tmp1(rcnumelleft+rcnumelright, leftMat.numCols()), tmp2;
+                //numel sollte hier immer 1 sein. Ansonsten genau das selbe wie weiter unten...
+
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.,
+                                Bref(_(1, rcnumelleft), _(1, lcnumelleft)),
+                                leftMat(_(1, lcnumelleft), _),
+                                0., tmp1(_(1, rcnumelleft), _));
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.,
+                                Bref(_(rcnumelleft+1,
+                                       rcnumelleft+rcnumelright),
+                                     _(lcnumelleft+1,
+                                       lcnumelleft+lcnumelright)),
+                                leftMat(_(lcnumelleft+1,
+                                          lcnumelleft+lcnumelright), _),
+                                0., tmp1(_(rcnumelleft+1,
+                                           rcnumelleft+rcnumelright), _));
+
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans, 1.,
+                                rightMat(_(1, rcnumelleft), _),
+                                tmp1(_(1, rcnumelleft), _),
+                                0.,tmp2);
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans, 1.,
+                                rightMat(_(rcnumelleft+1,
+                                           rcnumelleft+rcnumelright), _),
+                                tmp1(_(rcnumelleft+1,
+                                       rcnumelleft+rcnumelright), _),
+                                1., tmp2);
+
+                //einsortiert werden muss hier nicht, da wir nicht mit QR weiterverarbeiten ist dies schon die Blockstruktur!
+
+                node->getContent()->setUorB(tmp2);
+                node->getContent()->setNumRows(1);
+                node->getContent()->setLeftChildNumRows(tmp2.numCols());
+                node->getContent()->setRightChildNumRows(tmp2.numRows());
+
+            } else {
+                int numel        = node->getContent()->getNumRows();
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()
+                                   ->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()
+                                   ->getContent()->getUorB();
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& QRmat = QRmats[counter];
+                Matrix& U     = Us[counter];
+                Matrix& Q     = Qs[counter];
+                int rank      = ranks[counter];
+                int m         = leftMat.numCols()*rightMat.numCols();
+                int n         = numel;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    QRmat(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                //Das hier ist Q_t*S_t, die muss nun zurück ins Blockformat!!!
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                int newnumel   = tmp1.numCols();
+                int newlcnumel = node->getfirstChild()->getContent()->getNumRows();
+                int newrcnumel = node->getlastChild()->getContent()->getNumRows();
+                Matrix newB(newnumel*newrcnumel,newlcnumel);
+
+                for(int i = 1; i <= newnumel; ++i){
+                    for(int j = 1; j <= newlcnumel; ++j){
+                        newB(_((i-1)*newrcnumel+1,i*newrcnumel),j) = tmp1(_((j-1)*newrcnumel + 1,j*newrcnumel) ,i);
+                    }
+                }
+
+                node->getContent()->setUorB(newB);
+                node->getContent()->setNumRows(newnumel);
+                node->getContent()->setLeftChildNumRows(newlcnumel);
+                node->getContent()->setRightChildNumRows(newrcnumel);
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+            TITleft--;
+            TITright--;
+            ++counter;
+            newlevel = true;
+        }
+    }
+
+    return tree;
+}
+
+
 template <typename T>
 HTuckerTree<T>  operator+(const HTuckerTree<T>  & tree1, const HTuckerTree<T> & tree2){
     using flens::_;
@@ -2220,12 +3282,107 @@ HTuckerTree<T> subtree(const HTuckerTree<T> &tree, const int mindim, const int m
 
 
 template <typename T>
-HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T> & tree){
+HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T>& tree)
+{
+    using flens::_;
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree);
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > GramTIT = gram.getGeneralTree().begin();
+    for(; TIT <= tree.getGeneralTree().end(); TIT++,GramTIT++){
+        node = TIT.getNode();
+        gramnode = GramTIT.getNode();
+        if(node->isRoot()){
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+        } else {
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentnumel   = parent->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+            Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
+            Matrix &parentB   = parent->getUorB();
+            Matrix G(numel,numel);
+            if(node == node->getParent()->getlastChild()){
+                /* G_tr */
+                Matrix B31(parentnumel*parentlcnumel, parentrcnumel);
+                for (int i=1; i<=parentnumel; ++i) {
+                    for (int j=1; j<=parentlcnumel; ++j) {
+                        B31((i-1)*parentlcnumel+j, _) =
+                        parentB(_((i-1)*parentrcnumel+1, i*parentrcnumel), j);
+                    }
+                }
+
+                /* Compute tensor product */
+                Matrix B31block(parentlcnumel, parentnumel);
+                Matrix tensor(parentnumel*parentlcnumel, parentrcnumel);
+                Matrix tmp(parentlcnumel, parentnumel);
+                for (int i=1; i<=parentrcnumel; ++i) {
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B31block(_, j) =
+                        B31(_((j-1)*parentlcnumel+1, j*parentlcnumel), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31block, parentG, 0., tmp);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tr */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B31, tensor, 0., G);
+            } else {
+                /* G_tl */
+                /* Compute tensor product */
+                Matrix B32block(parentrcnumel, parentnumel);
+                Matrix tensor(parentnumel*parentrcnumel, parentlcnumel);
+                Matrix tmp(parentrcnumel, parentnumel);
+                for (int i=1; i<=parentlcnumel; ++i) {
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B32block(_, j) =
+                        parentB(_((j-1)*parentrcnumel+1, j*parentrcnumel), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32block, parentG, 0., tmp);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tl */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., parentB, tensor, 0., G);
+            }
+            gramnode->getContent()->setUorB(G);
+        }
+    }
+
+    return gram;
+}
+
+
+template <typename T>
+HTuckerTree<T> gramians_orthogonal2(const HTuckerTree<T> & tree){
 	
 	GeneralTreeNode<HTuckerTreeNode<T> > *node;
 	GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
 	HTuckerTreeNode<T> *parent;
 	HTuckerTree<T> gram(tree);
+
+    std::cout << "gramians_orthogonal: max rank = " << tree.max_rank() << std::endl;
 	
     {
     GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.getGeneralTree().begin();
@@ -2237,7 +3394,7 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T> & tree){
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > M(1,1);
 			M = 1;
 			gramnode->getContent()->setUorB(M);
-		} else { 
+		} else {
 			parent = node->getParent()->getContent();
 			
 			int numel = node->getContent()->getNumRows();
@@ -2290,7 +3447,178 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T> & tree){
 
 
 template <typename T>
-HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree){
+HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree)
+{
+    using flens::_;
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node, *nodem;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree);
+    HTuckerTree<T> Mtree;
+    Mtree.set_tree(tree);
+
+    /* Compute M's */
+    auto TIT      = tree.getGeneralTree().end();
+    auto TITm     = Mtree.getGeneralTree().end();
+    for (; TIT >= tree.getGeneralTree().begin(); TIT--, TITm--) {
+        node      = TIT.getNode();
+        nodem     = TITm.getNode();
+        if(node->isLeaf()) {
+            Matrix tmp;
+            Matrix& U = node->getContent()->getUorB();
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., U, U, 0., tmp);
+            nodem->getContent()->setUorB(tmp);
+        } else if (node->isInner()) {
+            Matrix& Mr = nodem->getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getfirstChild()->getContent()->getUorB();
+
+            Matrix& Bt     = node->getContent()->getUorB();
+
+            int numel = node->getContent()->getNumRows();
+            int rcnumel = TIT.getNode()->getContent()->getRightChildNumRows();
+            int lcnumel = TIT.getNode()->getContent()->getLeftChildNumRows();
+
+            Matrix tensor(rcnumel*numel, lcnumel);
+            Matrix tmp(rcnumel, lcnumel);
+            /* Compute tensor product */
+            for (int i=1; i<=numel; ++i) {
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                1.,
+                                Bt(_((i-1)*rcnumel+1, i*rcnumel), _),
+                                Ml,
+                                0., tmp);
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1.,
+                                Mr,
+                                tmp,
+                                0., tensor(_((i-1)*rcnumel+1, i*rcnumel), _));
+            }
+
+            /* Compute B_t^H*tensor */
+            Matrix Mt(numel, numel);
+            Matrix tensornonblock(rcnumel*lcnumel, numel);
+            Matrix Bnonblock(rcnumel*lcnumel, numel);
+
+            for (int i=1; i<=numel; ++i) {
+                for (int j=1; j<=rcnumel; ++j) {
+                    tensornonblock(_((j-1)*lcnumel+1, j*lcnumel), i) =
+                    tensor((i-1)*rcnumel+j, _);
+
+                    Bnonblock(_((j-1)*lcnumel+1, j*lcnumel), i) =
+                    Bt((i-1)*rcnumel+j, _);
+                }
+            }
+
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., Bnonblock,
+                            tensornonblock,
+                            0., Mt);
+
+            nodem->getContent()->setUorB(Mt);
+        }
+    }
+
+    /* Compute gram */
+    TIT          = tree.getGeneralTree().begin();
+    auto GramTIT = gram.getGeneralTree().begin();
+    TITm         = Mtree.getGeneralTree().begin();
+    for (; TIT <= tree.getGeneralTree().end(); TIT++, GramTIT++, TITm++) {
+        node     = TIT.getNode();
+        nodem    = TITm.getNode();
+        gramnode = GramTIT.getNode();
+        if(node->isRoot()){
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+        } else {
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentnumel   = parent->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+            Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
+            Matrix &parentB   = parent->getUorB();
+
+            Matrix& Mr = nodem->getParent()->
+                         getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getParent()->
+                         getfirstChild()->getContent()->getUorB();
+
+            Matrix G(numel,numel);
+            if(node == node->getParent()->getlastChild()){
+                /* G_tr */
+                Matrix B31(parentnumel*parentlcnumel, parentrcnumel);
+                for (int i=1; i<=parentnumel; ++i) {
+                    for (int j=1; j<=parentlcnumel; ++j) {
+                        B31((i-1)*parentlcnumel+j, _) =
+                        parentB(_((i-1)*parentrcnumel+1, i*parentrcnumel), j);
+                    }
+                }
+
+                /* Compute tensor product */
+                Matrix B31block(parentlcnumel, parentnumel);
+                Matrix tensor(parentnumel*parentlcnumel, parentrcnumel);
+                Matrix tmp2(parentlcnumel, parentnumel);
+                Matrix tmp(parentlcnumel, parentnumel);
+                for (int i=1; i<=parentrcnumel; ++i) {
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B31block(_, j) =
+                        B31(_((j-1)*parentlcnumel+1, j*parentlcnumel), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31block, parentG, 0., tmp2);
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Ml, tmp2, 0., tmp);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tr */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B31, tensor, 0., G);
+            } else {
+                /* G_tl */
+                /* Compute tensor product */
+                Matrix B32block(parentrcnumel, parentnumel);
+                Matrix tensor(parentnumel*parentrcnumel, parentlcnumel);
+                Matrix tmp2(parentrcnumel, parentnumel);
+                Matrix tmp(parentrcnumel, parentnumel);
+                for (int i=1; i<=parentlcnumel; ++i) {
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B32block(_, j) =
+                        parentB(_((j-1)*parentrcnumel+1, j*parentrcnumel), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32block, parentG, 0., tmp2);
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Mr, tmp2, 0., tmp);
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tl */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., parentB, tensor, 0., G);
+            }
+            gramnode->getContent()->setUorB(G);
+        }
+    }
+
+    return gram;
+}
+
+template <typename T>
+HTuckerTree<T> gramians_nonorthogonal2(const HTuckerTree<T> & tree){
     using flens::_;
 
 	HTuckerTree<T> Mtree(tree);
@@ -2300,7 +3628,7 @@ HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree){
     GeneralTreeIterator<HTuckerTreeNode<T> > TITm = Mtree.getGeneralTree().end();
     for(; TIT >= tree.getGeneralTree().begin(); TIT--,TITm--){
 		if(TIT.getNode()->isLeaf()){
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Uref = TIT.getNode()->getContent()->getUorB();
 			flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Uref,Uref,0.0,tmp);
 			TITm.getNode()->getContent()->setUorB(tmp);
@@ -2314,8 +3642,8 @@ HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree){
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Bt = TIT.getNode()->getContent()->getUorB();
 
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(numel*rcnumel,lcnumel);
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2(1,1);
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp3(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2;
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp3;
 
 			for(int i = 1; i<= numel; ++i){
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,Bt(_((i-1)*rcnumel+1,i*rcnumel),_),Ml,0.0,tmp2);
@@ -2476,6 +3804,120 @@ HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree){
 
 
 template <typename T>
+HTuckerTree<T> gramians_elementary(const HTuckerTree<T>& tree)
+{
+    /* Compute reduced gramians */
+    typedef GeneralTreeIterator<htucker::HTuckerTreeNode<T>>          TreeIt;
+    typedef GeneralTreeNode<htucker::HTuckerTreeNode<T>>              TreeNode;
+    typedef HTuckerTreeNode<T>                                        HTNode;
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor>>  Matrix;
+
+    HTuckerTree<T> Mtree;
+    Mtree.set_tree(tree);
+
+
+    TreeIt TIT  = tree.getGeneralTree().end();
+    TreeIt TITm = Mtree.getGeneralTree().end();
+    for (; TIT >= tree.getGeneralTree().begin(); TIT--,TITm--) {
+        TreeNode *node  = TIT.getNode();
+        TreeNode *nodem = TITm.getNode();
+        if (node->isLeaf()) {
+            Matrix  tmp;
+            Matrix& U = TIT.getNode()->getContent()->getUorB();
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,1.0,U, U,0.0,tmp);
+            nodem->getContent()->setUorB(tmp);
+        } else if (node->isInner()) {
+            int numel   = node->getContent()->getNumRows();
+            Matrix&  Mr = nodem->getlastChild()->getContent()->getUorB();
+            Matrix&  Ml = nodem->getfirstChild()->getContent()->getUorB();
+            Matrix   Mt(numel, numel);
+
+            for (int i = 1; i <= numel; ++i) {
+                int mapi = numel*(i-1)+i;
+                for (int j = 1; j <= numel; ++j) {
+                    int row = (mapi-1)%numel+1;
+                    int col = (mapi-1)/numel+1;
+                    Mt(i, j) = Ml(col, j)*Mr(row, j);
+                }
+            }
+            nodem->getContent()->setUorB(Mt);
+        }
+    }
+
+    htucker::HTuckerTree<T> gram;
+    gram.set_tree(tree);
+
+    TIT            = tree.getGeneralTree().begin();
+    TreeIt GramTIT = gram.getGeneralTree().begin();
+    TITm           = Mtree.getGeneralTree().begin();
+    for(; TIT <= tree.getGeneralTree().end(); TIT++,GramTIT++,TITm++) {
+        TreeNode *node, *gramnode, *nodem;
+        HTNode *parent;
+
+        node     = TIT.getNode();
+        nodem    = TITm.getNode();
+        gramnode = GramTIT.getNode();
+        if (node->isRoot()) {
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+        } else if (node->getParent()->isRoot()) {
+            if (node == node->getParent()->getlastChild()) {
+                Matrix& Ml = nodem->getParent()->
+                             getfirstChild()->getContent()->getUorB();
+                gramnode->getContent()->setUorB(Ml);
+            } else {
+                Matrix& Mr = nodem->getParent()->
+                             getlastChild()->getContent()->getUorB();
+                gramnode->getContent()->setUorB(Mr);
+            }
+        } else {
+            parent          = node->getParent()->getContent();
+            int numel       = node->getContent()->getNumRows();
+            int parentnumel = parent->getNumRows();
+            Matrix& parentG = gramnode->getParent()->
+                                getContent()->getUorB();
+            Matrix G(numel, numel);
+
+            if (node == node->getParent()->getlastChild()) {
+                Matrix& Ml = nodem->getParent()->
+                             getfirstChild()->getContent()->getUorB();
+
+                for (int i = 1; i <= numel; ++i) {
+                    int mapi   = numel*(i-1)+i;
+                    int blocki = (mapi-1)/parentnumel+1;
+                    int rowG   = (mapi-1)%parentnumel+1;
+                    for (int j = 1; j <= numel; ++j) {
+                        int mapj   = numel*(j-1)+j;
+                        int blockj = (mapj-1)/parentnumel+1;
+                        int colG   = (mapj-1)%parentnumel+1;
+                        G(i, j)    = Ml(blocki, blockj)*parentG(rowG, colG);
+                    }
+                }
+            } else {
+                Matrix& Mr = nodem->getParent()->
+                             getlastChild()->getContent()->getUorB();
+                for (int i = 1; i <= numel; ++i) {
+                    int mapi   = numel*(i-1)+i;
+                    int blocki = (mapi-1)/parentnumel+1;
+                    int rowG   = (mapi-1)%parentnumel+1;
+                    for (int j = 1; j <= numel; ++j) {
+                        int mapj   = numel*(j-1)+j;
+                        int blockj = (mapj-1)/parentnumel+1;
+                        int colG   = (mapj-1)%parentnumel+1;
+                        G(i, j)    = Mr(blocki, blockj)*parentG(rowG, colG);
+                    }
+                }
+            }
+            gramnode->getContent()->setUorB(G);
+        }
+    }
+
+    return gram;
+}
+
+
+template <typename T>
 void
 HTuckerTree<T>::truncate(const int rank, bool isorth)
 {
@@ -2599,7 +4041,7 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
     }
 
 
-    flens::DenseVector<flens::Array<T> > rho(s_all.length());
+    flens::DenseVector<flens::Array<int> > rho(s_all.length());
     flens::sort(s_all, rho);
     double delta = 0.;
     count = 0;
@@ -2681,6 +4123,1020 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
 		
 		
 	}
+    }
+}
+
+
+template <typename T>
+void
+HTuckerTree<T>::truncate_hsvd(const T eps)
+{
+    std::cout << "hsvd rank = " << max_rank() << std::endl;
+
+    auto gram = gramians_nonorthogonal(*this);
+    int  size = this->depth()-1;
+    flens::DenseVector<flens::Array<T> > eps2vec(size);
+    T val = eps*eps/(T) size;
+    eps2vec.fill(val);
+    this->truncate(gram, eps2vec);
+}
+
+
+template <typename T>
+void
+HTuckerTree<T>::truncate(const HTuckerTree<T>& gram, const int rank){
+    using flens::_;
+
+	HTuckerTree<T> Rtree;
+    Rtree.set_tree(*this);
+
+
+	flens::DenseVector<flens::Array<T> > s;
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U, Vt;
+	
+	GeneralTreeNode<HTuckerTreeNode<T> > *node;
+	
+    {
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITR = Rtree.getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().end();
+    for(;TIT >= this->getGeneralTree().begin(); TIT--,TITR--,TITgram--){
+		node = TIT.getNode();
+		if(node->isLeaf()){
+			//compute QR-Decomposition
+			//hier ist die Kopie notwendig, weil qrf die Matrix verändert!
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Uref = node->getContent()->getUorB();
+			int m = Uref.numRows();
+			int n = Uref.numCols();
+			flens::DenseVector<flens::Array<T> > tau;
+			qrf(Uref,tau);
+			
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Q(m,std::min(m,n));
+			Q(_(1,m),_(1,std::min(n,m))) = Uref(_,_(1,std::min(m,n)));
+			orgqr(Q,tau);
+
+
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Gref = TITgram.getNode()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1,tmp2,tmp3,tmp4;
+
+            tmp1 = Gref;
+
+			//hier berechnen wir R_t*G_t*R_t^T   => R_t entsprciht U_ref, wenn m > n dann ist die Matrix höher als Breit und enthält nur 0en, welche rausgeschmissen werden können
+			if (m < n){
+				//dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+				tmp2 = Gref(_,_(1,m));
+				tmp3 = Gref(_,_(m+1,n));
+				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+                tmp1.resize(0, 0);
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,Uref(_,_(m+1,n)),0.0,tmp1);
+                tmp3.resize(0, 0);
+				tmp3 = tmp1 + tmp2;
+                tmp1.resize(0, 0);
+                tmp2.resize(0, 0);
+				tmp1 = tmp3(_(1,m),_);
+				tmp2 = tmp3(_(m+1,n),_);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+                tmp3.resize(0, 0);
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp2,0.0,tmp3);
+                tmp2.resize(0, 0);
+				tmp2 = tmp1 + tmp3;
+                tmp1.resize(0, 0);
+				tmp1 = tmp2;
+			} else {
+				//d.h. in diesem Fall ist R in n x n und Q in m x n 
+				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_(1,n),_).upper(),tmp1);
+			}
+
+			//flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_(1,std::min(m,n)),_).upper(),tmp1);
+			//flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_(1,std::min(m,n)),_).upper(),tmp1);
+
+			//flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0, Gref,Uref(_(1,std::min(m,n)),_).upper(),0.0,tmp1);
+			//flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_(1,std::min(m,n)),_).upper(),tmp1,0.0,tmp2);
+
+			flens::svd(tmp1,s,U,Vt);
+			
+
+			//Die S_t^T*  R_t werden hier transponiert gespeicher! => also R_t^T*S_t
+			if ( m < n){
+                tmp2.resize(0, 0);
+                tmp3.resize(0, 0);
+				tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+				tmp3 = tmp2;
+				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp3,0.0,tmp4);
+                tmp1.resize(0, 0);
+				tmp1 = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+				tmp1(_(1,tmp2.numRows()),_) = tmp2;
+				tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+			} else {
+                tmp1.resize(0, 0);
+				tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
+				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
+
+			}
+			
+			
+			//flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,U(_,_(1,std::min(U.numCols(),rank))),Uref(_(1,std::min(m,n)),_).upper(),0.0,tmp1);
+			TITR.getNode()->getContent()->setUorB(tmp1);
+
+            tmp1.resize(0, 0);
+			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Q,U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+			node->getContent()->setUorB(tmp1);
+			node->getContent()->setNumRows(tmp1.numCols());
+		} else if(node->isRoot()){
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &leftMat = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1, tmp2;
+
+			//numel sollte hier immer 1 sein. Ansonsten genau das selbe wie weiter unten...
+			
+
+			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Bref,leftMat,0.0,tmp1);
+			flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,rightMat,tmp1,0.0,tmp2);
+			
+			//einsortiert werden muss hier nicht, da wir nicht mit QR weiterverarbeiten ist dies schon die Blockstruktur!
+
+			node->getContent()->setUorB(tmp2);
+			node->getContent()->setNumRows(1);
+			node->getContent()->setLeftChildNumRows(tmp2.numCols());
+			node->getContent()->setRightChildNumRows(tmp2.numRows());
+			
+		} else {
+			//compute (Stl^T Rtl x Str^T Rtr) B_t
+			int numel = node->getContent()->getNumRows();
+			int rcnumel = node->getContent()->getRightChildNumRows();
+			
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &leftMat = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > QRmat(leftMat.numCols()*rightMat.numCols(),numel);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1,tmp2,tmp3,tmp4;
+
+			int lr = leftMat.numCols(); // wegen leftMat^T
+			int rr = rightMat.numCols();
+		
+
+			for(int i = 1; i <= numel; ++i){
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Bref(_((i-1)*rcnumel + 1,i*rcnumel),_),leftMat,0.0,tmp1);
+				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,rightMat,tmp1,0.0,tmp2);
+				//jetzt noch in die neue Matrix einsortieren...
+				for(int j = 1; j <= lr; ++j){
+					QRmat(_((j-1)*rr+1,j*rr),i) = tmp2(_,j);
+				}
+			}
+			// jetzt die QR Zerlegung anwenden:
+			int m = QRmat.numRows();
+			int n = QRmat.numCols();
+			flens::DenseVector<flens::Array<T> > tau;
+			qrf(QRmat,tau);
+			
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Q(m,std::min(m,n));
+			Q(_(1,m),_) = QRmat(_,_(1,std::min(m,n)));
+			orgqr(Q,tau);
+
+			// Dann wie oben R_t G_t R_t^T berechnen
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Gref = TITgram.getNode()->getContent()->getUorB();
+
+            tmp1.resize(0, 0);
+            tmp1 = Gref;
+			if (m < n){
+				//dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                tmp2.resize(0, 0);
+                tmp3.resize(0, 0);
+				tmp2 = Gref(_,_(1,m));
+				tmp3 = Gref(_,_(m+1,n));
+				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+                tmp1.resize(0, 0);
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,QRmat(_,_(m+1,n)),0.0,tmp1);
+                tmp3.resize(0, 0);
+				tmp3 = tmp1 + tmp2;
+                tmp1.resize(0, 0);
+				tmp1 = tmp3(_(1,m),_);
+                tmp2.resize(0, 0);
+				tmp2 = tmp3(_(m+1,n),_);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+                tmp3.resize(0, 0);
+				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp2,0.0,tmp3);
+                tmp2.resize(0, 0);
+				tmp2 = tmp1 + tmp3;
+                tmp1.resize(0, 0);
+				tmp1 = tmp2;
+			} else {
+				//d.h. in diesem Fall ist R in n x n und Q in m x n 
+				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+			}
+			//flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0, Gref,QRmat(_(1,std::min(m,n)),_).upper(),0.0,tmp1);
+			//flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_(1,std::min(m,n)),_).upper(),tmp1,0.0,tmp2);
+
+			//Svd wie oben
+
+			flens::svd(tmp1,s,U,Vt);
+			//tmp1 = U(_,_(1,std::min(U.numCols(),rank)));
+			if ( m < n){
+                tmp2.resize(0, 0);
+				tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                tmp3.resize(0, 0);
+				tmp3 = tmp2;
+				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp3,0.0,tmp4);
+                tmp1.resize(0, 0);
+				tmp1 = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+				tmp1(_(1,tmp2.numRows()),_) = tmp2;
+				tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+			} else {
+                tmp1.resize(0, 0);
+				tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
+				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+
+			}
+			//flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,U(_,_(1,std::min(U.numCols(),rank))),Uref(_(1,std::min(m,n)),_).upper(),0.0,tmp1);
+			TITR.getNode()->getContent()->setUorB(tmp1);
+
+			//Das hier ist Q_t*S_t, die muss nun zurück ins Blockformat!!!
+            tmp1.resize(0, 0);
+			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Q,U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+			int newnumel = tmp1.numCols();
+			int newlcnumel = node->getfirstChild()->getContent()->getNumRows();
+			int newrcnumel = node->getlastChild()->getContent()->getNumRows();
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*newrcnumel,newlcnumel);
+
+			for(int i = 1; i <= newnumel; ++i){
+				for(int j = 1; j <= newlcnumel; ++j){
+					newB(_((i-1)*newrcnumel+1,i*newrcnumel),j) = tmp1(_((j-1)*newrcnumel + 1,j*newrcnumel) ,i);
+				}
+			}
+
+			node->getContent()->setUorB(newB);
+			node->getContent()->setNumRows(newnumel);
+			node->getContent()->setLeftChildNumRows(newlcnumel);
+			node->getContent()->setRightChildNumRows(newrcnumel);
+		}
+
+		
+	
+	}
+    }
+}
+
+
+template <typename T>
+void
+HTuckerTree<T>::truncate(const HTuckerTree<T>& gram,
+                         const flens::DenseVector<flens::Array<T> >& eps)
+{
+    using flens::_;
+
+    HTuckerTree<T> Rtree;
+    Rtree.set_tree(*this);
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+    typedef flens::DenseVector<flens::Array<T> >                      Vec;
+    typedef flens::DenseVector<flens::Array<int> >                    IntVec;
+
+
+    Vec s;
+    Matrix U, Vt;
+
+    std::vector<Vec> svals;
+    std::vector<int> ranks;
+
+    std::vector<Matrix> Us;
+    std::vector<Matrix> Urefs;
+    std::vector<Matrix> Qs;
+    std::vector<Matrix> QRmats;
+
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITR = Rtree.getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().end();
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > save;
+    GeneralTreeIterator<HTuckerTreeNode<T> > saver;
+    GeneralTreeIterator<HTuckerTreeNode<T> > savegram;
+
+    assert(eps.length()==TIT.getNode()->level()-1);
+
+    int  depth    = TIT.getNode()->level();
+    int  level    = depth;
+    bool sorted   = false;
+    bool newlevel = true;
+    int  counter  = 0;
+    int  length   = 0;
+
+    for(;TIT >= this->getGeneralTree().begin();){
+        node = TIT.getNode();
+
+        if (node->level()==level) {
+
+            if (newlevel) {
+                save     = TIT;
+                saver    = TITR;
+                savegram = TITgram;
+
+                Us.clear();
+                Urefs.clear();
+                Qs.clear();
+                QRmats.clear();
+                svals.clear();
+                ranks.clear();
+
+                length   = 0;
+                sorted   = false;
+                newlevel = false;
+            }
+
+            if (node->isLeaf()) {
+                //compute QR-Decomposition
+                //hier ist die Kopie notwendig, weil qrf die Matrix verändert!
+                Matrix Uref = node->getContent()->getUorB();
+                int m = Uref.numRows();
+                int n = Uref.numCols();
+                Vec tau;
+
+                qrf(Uref,tau);
+                Matrix Q(m,std::min(m,n));
+                Q = Uref(_,_(1,std::min(m,n)));
+                orgqr(Q, tau);
+
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+                Matrix tmp1,tmp2,tmp3,tmp4;
+
+                tmp1 = Gref;
+
+                //hier berechnen wir R_t*G_t*R_t^T   => R_t entsprciht U_ref, wenn m > n dann ist die Matrix höher als Breit und enthält nur 0en, welche rausgeschmissen werden können
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,Uref(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                }
+
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Urefs.push_back(Uref);
+                Qs.push_back(Q);
+                svals.push_back(s);
+                length += s.length();
+            } else if (node->isRoot()) {
+                sorted = true;
+                --level;
+                continue;
+            } else {
+                //compute (Stl^T Rtl x Str^T Rtr) B_t
+                int numel        = node->getContent()->getNumRows();
+                int rcnumel      = node->getContent()->getRightChildNumRows();
+
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+                Matrix &Bref     = node->getContent()->getUorB();
+                Matrix QRmat(leftMat.numCols()*rightMat.numCols(),numel);
+                Matrix tmp1,tmp2,tmp3,tmp4;
+
+                int lr = leftMat.numCols(); // wegen leftMat^T
+                int rr = rightMat.numCols();
+
+
+                for(int i = 1; i <= numel; ++i){
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Bref(_((i-1)*rcnumel + 1,i*rcnumel),_),leftMat,0.0,tmp1);
+                    flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,rightMat,tmp1,0.0,tmp2);
+                    //jetzt noch in die neue Matrix einsortieren...
+                    for(int j = 1; j <= lr; ++j){
+                        QRmat(_((j-1)*rr+1,j*rr),i) = tmp2(_,j);
+                    }
+                }
+                // jetzt die QR Zerlegung anwenden:
+                int m = QRmat.numRows();
+                int n = QRmat.numCols();
+                Vec tau;
+                qrf(QRmat,tau);
+
+                Matrix Q(m,std::min(m,n));
+                Q = QRmat(_,_(1,std::min(m,n)));
+                orgqr(Q,tau);
+
+                // Dann wie oben R_t G_t R_t^T berechnen
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+
+                tmp1.resize(0, 0);
+                tmp1 = Gref;
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2.resize(0, 0);
+                    tmp3.resize(0, 0);
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,QRmat(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2.resize(0, 0);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n 
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                }
+
+                //Svd wie oben
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Qs.push_back(Q);
+                QRmats.push_back(QRmat);
+                svals.push_back(s);
+                length += s.length();
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+
+        } else if (!sorted) {
+            TIT     = save;
+            TITR    = saver;
+            TITgram = savegram;
+            sorted  = true;
+            counter = 0;
+
+            Vec s_all(length);
+            int off = 1;
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                s_all(_(off,off+svals[i].length()-1)) = svals[i];
+                off += svals[i].length();
+            }
+
+
+            IntVec rho(s_all.length());
+            flens::sort(s_all, rho);
+            double delta = 0.;
+            double eps2  = eps(depth-level+1);
+            off          = 0;
+            for (; off<s_all.length(); ++off) {
+                delta += s_all(off+1);
+                if (delta>eps2) break;
+            }
+
+            IntVec dels(svals.size());
+            for (int i=1; i<=off; ++i) {
+                int right = 0;
+                for (std::size_t j=0; j<svals.size(); ++j) {
+                    right += svals[j].length();
+                    if (rho(i)<=right) {
+                        ++dels(j+1);
+                        break;
+                    }
+                }
+            }
+
+            ranks.resize(svals.size());
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                int rank = svals[i].length() - dels(i+1);
+                if (rank==0) rank = 1;
+                ranks[i] = rank;
+            }
+
+            --level;
+        } else {
+            if (node->isLeaf()) {
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& Uref = Urefs[counter];
+                Matrix& U    = Us[counter];
+                Matrix& Q    = Qs[counter];
+                int rank     = ranks[counter];
+                int m        = node->getContent()->getUorB().numRows();
+                int n        = node->getContent()->getUorB().numCols();;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    Uref(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1.resize(0, 0);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U
+                           (_(1,n),_(1,std::min(U.numCols(),
+                                                rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U
+                                (_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                node->getContent()->setUorB(tmp1);
+                node->getContent()->setNumRows(tmp1.numCols());
+            } else if (node->isRoot()) {
+
+                Matrix &leftMat = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+                Matrix &Bref = node->getContent()->getUorB();
+                Matrix tmp1, tmp2;
+
+                //numel sollte hier immer 1 sein. Ansonsten genau das selbe wie weiter unten...
+
+                flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Bref,leftMat,0.0,tmp1);
+                flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,rightMat,tmp1,0.0,tmp2);
+
+                //einsortiert werden muss hier nicht, da wir nicht mit QR weiterverarbeiten ist dies schon die Blockstruktur!
+
+                node->getContent()->setUorB(tmp2);
+                node->getContent()->setNumRows(1);
+                node->getContent()->setLeftChildNumRows(tmp2.numCols());
+                node->getContent()->setRightChildNumRows(tmp2.numRows());
+            } else {
+                int numel        = node->getContent()->getNumRows();
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()
+                                   ->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()
+                                   ->getContent()->getUorB();
+
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& QRmat = QRmats[counter];
+                Matrix& U     = Us[counter];
+                Matrix& Q     = Qs[counter];
+                int rank      = ranks[counter];
+                int m         = leftMat.numCols()*rightMat.numCols();
+                int n         = numel;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    QRmat(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                //Das hier ist Q_t*S_t, die muss nun zurück ins Blockformat!!!
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                int newnumel   = tmp1.numCols();
+                int newlcnumel = node->getfirstChild()->getContent()->getNumRows();
+                int newrcnumel = node->getlastChild()->getContent()->getNumRows();
+                Matrix newB(newnumel*newrcnumel,newlcnumel);
+
+                for(int i = 1; i <= newnumel; ++i){
+                    for(int j = 1; j <= newlcnumel; ++j){
+                        newB(_((i-1)*newrcnumel+1,i*newrcnumel),j) = tmp1(_((j-1)*newrcnumel + 1,j*newrcnumel) ,i);
+                    }
+                }
+
+                node->getContent()->setUorB(newB);
+                node->getContent()->setNumRows(newnumel);
+                node->getContent()->setLeftChildNumRows(newlcnumel);
+                node->getContent()->setRightChildNumRows(newrcnumel);
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+            ++counter;
+            newlevel = true;
+        }
+    }
+}
+
+
+template <typename T>
+void
+HTuckerTree<T>::truncate_elementary(const HTuckerTree<T>& gram,
+                                    const flens::DenseVector
+                                          <flens::Array<T> >& eps)
+{
+    using flens::_;
+
+    HTuckerTree<T> Rtree;
+    Rtree.set_tree(*this);
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+    typedef flens::DenseVector<flens::Array<T> >                      Vec;
+    typedef flens::DenseVector<flens::Array<int> >                    IntVec;
+
+
+    Vec s;
+    Matrix U, Vt;
+
+    std::vector<Vec> svals;
+    std::vector<int> ranks;
+
+    std::vector<Matrix> Us;
+    std::vector<Matrix> Urefs;
+    std::vector<Matrix> Qs;
+    std::vector<Matrix> QRmats;
+
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITR = Rtree.getGeneralTree().end();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().end();
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > save;
+    GeneralTreeIterator<HTuckerTreeNode<T> > saver;
+    GeneralTreeIterator<HTuckerTreeNode<T> > savegram;
+
+    assert(eps.length()==TIT.getNode()->level()-1);
+
+    int  depth    = TIT.getNode()->level();
+    int  level    = depth;
+    bool sorted   = false;
+    bool newlevel = true;
+    int  counter  = 0;
+    int  length   = 0;
+    for(;TIT >= this->getGeneralTree().begin();){
+        node = TIT.getNode();
+
+        if (node->level()==level) {
+
+            if (newlevel) {
+                save     = TIT;
+                saver    = TITR;
+                savegram = TITgram;
+
+                Us.clear();
+                Urefs.clear();
+                Qs.clear();
+                QRmats.clear();
+                svals.clear();
+                ranks.clear();
+
+                length   = 0;
+                sorted   = false;
+                newlevel = false;
+            }
+
+            if (node->isLeaf()) {
+                //compute QR-Decomposition
+                //hier ist die Kopie notwendig, weil qrf die Matrix verändert!
+                Matrix Uref = node->getContent()->getUorB();
+                int m = Uref.numRows();
+                int n = Uref.numCols();
+                Vec tau;
+                qrf(Uref,tau);
+
+                Matrix Q(m,std::min(m,n));
+                Q = Uref(_,_(1,std::min(m,n)));
+                orgqr(Q, tau);
+
+
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+                Matrix tmp1,tmp2,tmp3,tmp4;
+
+                tmp1 = Gref;
+
+                //hier berechnen wir R_t*G_t*R_t^T   => R_t entsprciht U_ref, wenn m > n dann ist die Matrix höher als Breit und enthält nur 0en, welche rausgeschmissen werden können
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,Uref(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_(1,n),_).upper(),tmp1);
+                }
+
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Urefs.push_back(Uref);
+                Qs.push_back(Q);
+                svals.push_back(s);
+                length += s.length();
+            } else if (node->isRoot()) {
+                sorted = true;
+                --level;
+                continue;
+            } else {
+                //compute (Stl^T Rtl x Str^T Rtr) B_t
+                int numel        = node->getContent()->getNumRows();
+
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
+                Matrix QRmat(leftMat.numCols()*rightMat.numCols(),numel);
+                Matrix tmp1,tmp2,tmp3,tmp4;
+
+                int lr = leftMat.numCols(); // wegen leftMat^T
+                int rr = rightMat.numCols();
+
+
+                for(int i = 1; i <= numel; ++i){
+                    tmp2.resize(rightMat.numCols(), leftMat.numCols());
+                    for (int i1=1; i1<=rightMat.numCols(); ++i1) {
+                        for (int i2=1; i2<=leftMat.numCols(); ++i2) {
+                            tmp2(i1, i2) = rightMat(i, i1)*leftMat(i, i2);
+                        }
+                    }
+                    //jetzt noch in die neue Matrix einsortieren...
+                    for(int j = 1; j <= lr; ++j){
+                        QRmat(_((j-1)*rr+1,j*rr),i) = tmp2(_,j);
+                    }
+                }
+                // jetzt die QR Zerlegung anwenden:
+                int m = QRmat.numRows();
+                int n = QRmat.numCols();
+                Vec tau;
+                qrf(QRmat,tau);
+
+                Matrix Q(m,std::min(m,n));
+                Q = QRmat(_,_(1,std::min(m,n)));
+                orgqr(Q,tau);
+
+                // Dann wie oben R_t G_t R_t^T berechnen
+                Matrix &Gref = TITgram.getNode()->getContent()->getUorB();
+
+                tmp1.resize(0, 0);
+                tmp1 = Gref;
+                if (m < n){
+                    //dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
+                    tmp2.resize(0, 0);
+                    tmp3.resize(0, 0);
+                    tmp2 = Gref(_,_(1,m));
+                    tmp3 = Gref(_,_(m+1,n));
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+                    tmp1.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,QRmat(_,_(m+1,n)),0.0,tmp1);
+                    tmp3.resize(0, 0);
+                    tmp3 = tmp1 + tmp2;
+                    tmp1.resize(0, 0);
+                    tmp1 = tmp3(_(1,m),_);
+                    tmp2.resize(0, 0);
+                    tmp2 = tmp3(_(m+1,n),_);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+                    tmp3.resize(0, 0);
+                    flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp2,0.0,tmp3);
+                    tmp2.resize(0, 0);
+                    tmp1 = tmp1 + tmp3;
+                } else {
+                    //d.h. in diesem Fall ist R in n x n und Q in m x n 
+                    flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                    flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_(1,n),_).upper(),tmp1);
+                }
+
+                //Svd wie oben
+                flens::svd(tmp1,s,U,Vt);
+
+                Us.push_back(U);
+                Qs.push_back(Q);
+                QRmats.push_back(QRmat);
+                svals.push_back(s);
+                length += s.length();
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+
+        } else if (!sorted) {
+            TIT     = save;
+            TITR    = saver;
+            TITgram = savegram;
+            sorted  = true;
+            counter = 0;
+
+            Vec s_all(length);
+            int off = 1;
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                s_all(_(off,off+svals[i].length()-1)) = svals[i];
+                off += svals[i].length();
+            }
+
+
+            IntVec rho(s_all.length());
+            flens::sort(s_all, rho);
+            double delta = 0.;
+            double eps2  = eps(depth-level+1);
+            off          = 0;
+            for (; off<s_all.length(); ++off) {
+                delta += s_all(off+1);
+                if (delta>eps2) break;
+            }
+
+            IntVec dels(svals.size());
+            for (int i=1; i<=off; ++i) {
+                int right = 0;
+                for (std::size_t j=0; j<svals.size(); ++j) {
+                    right += svals[j].length();
+                    if (rho(i)<=right) {
+                        ++dels(j+1);
+                        break;
+                    }
+                }
+            }
+
+            ranks.resize(svals.size());
+            for (std::size_t i=0; i<svals.size(); ++i) {
+                int rank = svals[i].length() - dels(i+1);
+                if (rank==0) rank = 1;
+                ranks[i] = rank;
+            }
+
+            --level;
+        } else {
+            if (node->isLeaf()) {
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& Uref = Urefs[counter];
+                Matrix& U    = Us[counter];
+                Matrix& Q    = Qs[counter];
+                int rank     = ranks[counter];
+                int m        = node->getContent()->getUorB().numRows();
+                int n        = node->getContent()->getUorB().numCols();;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    Uref(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1.resize(0, 0);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U
+                           (_(1,n),_(1,std::min(U.numCols(),
+                                                rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    Uref(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U
+                                (_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                node->getContent()->setUorB(tmp1);
+                node->getContent()->setNumRows(tmp1.numCols());
+            } else if (node->isRoot()) {
+                Matrix &leftMat  = TITR.getNode()->
+                                   getfirstChild()->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->
+                                   getlastChild()->getContent()->getUorB();
+                Matrix tmp1;
+
+                //numel sollte hier immer 1 sein. Ansonsten genau das selbe wie weiter unten...
+
+                flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,rightMat,leftMat,0.0,tmp1);
+
+                //einsortiert werden muss hier nicht, da wir nicht mit QR weiterverarbeiten ist dies schon die Blockstruktur!
+
+                node->getContent()->setUorB(tmp1);
+                node->getContent()->setNumRows(1);
+                node->getContent()->setLeftChildNumRows(tmp1.numCols());
+                node->getContent()->setRightChildNumRows(tmp1.numRows());
+
+            } else {
+                int numel        = node->getContent()->getNumRows();
+                Matrix &leftMat  = TITR.getNode()->getfirstChild()
+                                   ->getContent()->getUorB();
+                Matrix &rightMat = TITR.getNode()->getlastChild()
+                                   ->getContent()->getUorB();
+
+
+                Matrix tmp1, tmp2, tmp3, tmp4;
+                Matrix& QRmat = QRmats[counter];
+                Matrix& U     = Us[counter];
+                Matrix& Q     = Qs[counter];
+                int rank      = ranks[counter];
+                int m         = leftMat.numCols()*rightMat.numCols();
+                int n         = numel;
+
+                if ( m < n){
+                    tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                    tmp3 = tmp2;
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_,_(1,m)).upper(),tmp2);
+                    flens::blas::mm(cxxblas::Trans,
+                                    cxxblas::NoTrans, 1.0,
+                                    QRmat(_,_(m+1,n)),tmp3,0.0,tmp4);
+                    tmp1 = Matrix(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
+                    tmp1(_(1,tmp2.numRows()),_) = tmp2;
+                    tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
+                } else {
+                    tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
+                    flens::blas::mm(cxxblas::Left,
+                                    cxxblas::Trans, 1.0,
+                                    QRmat(_(1,n),_).upper(),tmp1);
+
+                }
+
+                TITR.getNode()->getContent()->setUorB(tmp1);
+
+                //Das hier ist Q_t*S_t, die muss nun zurück ins Blockformat!!!
+                tmp1.resize(0, 0);
+                flens::blas::mm(cxxblas::NoTrans,
+                                cxxblas::NoTrans, 1.0,
+                                Q,
+                                U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
+                int newnumel   = tmp1.numCols();
+                int newlcnumel = node->getfirstChild()->getContent()->getNumRows();
+                int newrcnumel = node->getlastChild()->getContent()->getNumRows();
+                Matrix newB(newnumel*newrcnumel,newlcnumel);
+
+                for(int i = 1; i <= newnumel; ++i){
+                    for(int j = 1; j <= newlcnumel; ++j){
+                        newB(_((i-1)*newrcnumel+1,i*newrcnumel),j) = tmp1(_((j-1)*newrcnumel + 1,j*newrcnumel) ,i);
+                    }
+                }
+
+                node->getContent()->setUorB(newB);
+                node->getContent()->setNumRows(newnumel);
+                node->getContent()->setLeftChildNumRows(newlcnumel);
+                node->getContent()->setRightChildNumRows(newrcnumel);
+            }
+
+            TIT--;
+            TITR--;
+            TITgram--;
+            ++counter;
+            newlevel = true;
+        }
     }
 }
 
@@ -2775,9 +5231,8 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 	HTuckerTree<T> gram = gramians_nonorthogonal(treecopy);
 	HTuckerTree<T> Rtree(tree);
 
-
 	flens::DenseVector<flens::Array<T> > s;
-	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U(1,1),Vt(1,1);
+	flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > U, Vt;
 	
 	GeneralTreeNode<HTuckerTreeNode<T> > *node;
 	
@@ -2802,23 +5257,29 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 
 
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Gref = TITgram.getNode()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1(Gref.numRows(),Gref.numCols()),tmp2(1,1),tmp3(1,1),tmp4(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1,tmp2,tmp3,tmp4;
 
-			tmp1 = Gref;
-
+            tmp1 = Gref;
 			//hier berechnen wir R_t*G_t*R_t^T   => R_t entsprciht U_ref, wenn m > n dann ist die Matrix höher als Breit und enthält nur 0en, welche rausgeschmissen werden können
 			if (m < n){
 				//dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
-				tmp2 = tmp1(_,_(1,m));
-				tmp3 = tmp1(_,_(m+1,n));
+				tmp2 = Gref(_,_(1,m));
+				tmp3 = Gref(_,_(m+1,n));
 				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
+                tmp1.resize(0, 0);
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,Uref(_,_(m+1,n)),0.0,tmp1);
+                tmp3.resize(0, 0);
 				tmp3 = tmp1 + tmp2;
+                tmp1.resize(0, 0);
+                tmp2.resize(0, 0);
 				tmp1 = tmp3(_(1,m),_);
 				tmp2 = tmp3(_(m+1,n),_);
-				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,Uref(_,_(1,m)).upper(),tmp1);
+                tmp3.resize(0, 0);
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp2,0.0,tmp3);
+                tmp2.resize(0, 0);
 				tmp2 = tmp1 + tmp3;
+                tmp1.resize(0, 0);
 				tmp1 = tmp2;
 			} else {
 				//d.h. in diesem Fall ist R in n x n und Q in m x n 
@@ -2837,14 +5298,18 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 
 			//Die S_t^T*  R_t werden hier transponiert gespeicher! => also R_t^T*S_t
 			if ( m < n){
+                tmp2.resize(0, 0);
+                tmp3.resize(0, 0);
 				tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
 				tmp3 = tmp2;
 				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,Uref(_,_(1,m)).upper(),tmp2);
 				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Uref(_,_(m+1,n)),tmp3,0.0,tmp4);
+                tmp1.resize(0, 0);
 				tmp1 = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
 				tmp1(_(1,tmp2.numRows()),_) = tmp2;
 				tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
 			} else {
+                tmp1.resize(0, 0);
 				tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
 				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,Uref(_(1,n),_).upper(),tmp1);
 
@@ -2854,21 +5319,16 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 			//flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,U(_,_(1,std::min(U.numCols(),rank))),Uref(_(1,std::min(m,n)),_).upper(),0.0,tmp1);
 			TITR.getNode()->getContent()->setUorB(tmp1);
 
+            tmp1.resize(0, 0);
 			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Q,U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
 			node->getContent()->setUorB(tmp1);
 			node->getContent()->setNumRows(tmp1.numCols());
 		} else if(node->isRoot()){
-			int numel = node->getContent()->getNumRows();
-			int rcnumel = node->getContent()->getRightChildNumRows();
-			int lcnumel = node->getContent()->getLeftChildNumRows();
-			
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &leftMat = TITR.getNode()->getfirstChild()->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1(1,1),tmp2(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1, tmp2;
 
-			int lr = leftMat.numRows(); // wegen leftMat^T
-			int rr = rightMat.numRows();
 			//numel sollte hier immer 1 sein. Ansonsten genau das selbe wie weiter unten...
 			
 
@@ -2886,13 +5346,12 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 			//compute (Stl^T Rtl x Str^T Rtr) B_t
 			int numel = node->getContent()->getNumRows();
 			int rcnumel = node->getContent()->getRightChildNumRows();
-			int lcnumel = node->getContent()->getLeftChildNumRows();
 			
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &leftMat = TITR.getNode()->getfirstChild()->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &rightMat = TITR.getNode()->getlastChild()->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > QRmat(leftMat.numCols()*rightMat.numCols(),numel);
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1(1,1),tmp2(1,1),tmp3(1,1),tmp4(1,1);
+			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1,tmp2,tmp3,tmp4;
 
 			int lr = leftMat.numCols(); // wegen leftMat^T
 			int rr = rightMat.numCols();
@@ -2919,19 +5378,29 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 			// Dann wie oben R_t G_t R_t^T berechnen
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Gref = TITgram.getNode()->getContent()->getUorB();
 
-			tmp1 = Gref;
+            tmp1.resize(0, 0);
+            tmp1 = Gref;
 			if (m < n){
 				//dieser Fall ist komplizierter, weil die Matrix R zerlegt werden muss..
-				tmp2 = tmp1(_,_(1,m));
-				tmp3 = tmp1(_,_(m+1,n));
+                tmp2.resize(0, 0);
+                tmp3.resize(0, 0);
+				tmp2 = Gref(_,_(1,m));
+				tmp3 = Gref(_,_(m+1,n));
 				flens::blas::mm(cxxblas::Right,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
+                tmp1.resize(0, 0);
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::Trans,1.0,tmp3,QRmat(_,_(m+1,n)),0.0,tmp1);
+                tmp3.resize(0, 0);
 				tmp3 = tmp1 + tmp2;
+                tmp1.resize(0, 0);
 				tmp1 = tmp3(_(1,m),_);
+                tmp2.resize(0, 0);
 				tmp2 = tmp3(_(m+1,n),_);
-				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+				flens::blas::mm(cxxblas::Left,cxxblas::NoTrans,1.0,QRmat(_,_(1,m)).upper(),tmp1);
+                tmp3.resize(0, 0);
 				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp2,0.0,tmp3);
+                tmp2.resize(0, 0);
 				tmp2 = tmp1 + tmp3;
+                tmp1.resize(0, 0);
 				tmp1 = tmp2;
 			} else {
 				//d.h. in diesem Fall ist R in n x n und Q in m x n 
@@ -2944,16 +5413,22 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 			//Svd wie oben
 
 			flens::svd(tmp1,s,U,Vt);
+            std::cout << " Normal trunc, s sizes in inner = " << s.length()
+                      << std::endl;
 			//tmp1 = U(_,_(1,std::min(U.numCols(),rank)));
 			if ( m < n){
+                tmp2.resize(0, 0);
 				tmp2 = U(_,_(1,std::min(U.numCols(),rank)));
+                tmp3.resize(0, 0);
 				tmp3 = tmp2;
 				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,QRmat(_,_(1,m)).upper(),tmp2);
 				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,QRmat(_,_(m+1,n)),tmp3,0.0,tmp4);
+                tmp1.resize(0, 0);
 				tmp1 = flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> >(tmp2.numRows()+tmp4.numRows(),tmp2.numCols());
 				tmp1(_(1,tmp2.numRows()),_) = tmp2;
 				tmp1(_(tmp2.numRows()+1,tmp1.numRows()),_) = tmp4;
 			} else {
+                tmp1.resize(0, 0);
 				tmp1 = U(_(1,n),_(1,std::min(U.numCols(),rank)));
 				flens::blas::mm(cxxblas::Left,cxxblas::Trans,1.0,QRmat(_(1,n),_).upper(),tmp1);
 
@@ -2962,6 +5437,7 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 			TITR.getNode()->getContent()->setUorB(tmp1);
 
 			//Das hier ist Q_t*S_t, die muss nun zurück ins Blockformat!!!
+            tmp1.resize(0, 0);
 			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,Q,U(_,_(1,std::min(U.numCols(),rank))),0.0,tmp1);
 			int newnumel = tmp1.numCols();
 			int newlcnumel = node->getfirstChild()->getContent()->getNumRows();
@@ -2985,7 +5461,7 @@ HTuckerTree<T> truncate_nonorthogonal(const HTuckerTree<T> & tree, const int ran
 	}
     }
 
-	return treecopy;
+    return treecopy;
 }
 
 
