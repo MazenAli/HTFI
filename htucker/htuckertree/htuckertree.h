@@ -104,11 +104,18 @@ public:
     truncate_hsvd(const T eps);
 
     void
+    truncate_hsvd_soft(const T eps);
+
+    void
     truncate(const HTuckerTree<T>& gram, const int rank);
 
     void
     truncate(const HTuckerTree<T>& gram,
              const flens::DenseVector<flens::Array<T> >& eps);
+
+    void
+    truncate_soft(const HTuckerTree<T>& gram, const double eps);
+
     void
     truncate_elementary(const HTuckerTree<T>& gram,
                         const flens::DenseVector<flens::Array<T> >& eps);
@@ -160,6 +167,11 @@ template <typename T>
 HTuckerTree<T>   add_truncate(const HTuckerTree<T> & tree1,
                               const HTuckerTree<T> & tree2,
                               const double eps);
+
+template <typename T>
+HTuckerTree<T>   add_truncate_soft(const HTuckerTree<T> & tree1,
+                                   const HTuckerTree<T> & tree2,
+                                   const double eps);
 
 template <typename T>
 HTuckerTree<T>   operator+(const HTuckerTree<T> & tree1, const HTuckerTree<T> & tree2);
