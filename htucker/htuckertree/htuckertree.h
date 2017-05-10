@@ -100,19 +100,23 @@ public:
     void
     truncate(double eps, bool isorth = false);
 
+    /* Works only with balanced trees so far */
     void
     truncate_hsvd(const T eps);
 
+    /* Works only with balanced trees so far */
     void
     truncate_hsvd_soft(const T eps);
 
     void
     truncate(const HTuckerTree<T>& gram, const int rank);
 
+    /* Works only with balanced trees so far */
     void
     truncate(const HTuckerTree<T>& gram,
              const flens::DenseVector<flens::Array<T> >& eps);
 
+    /* Works only with balanced trees so far */
     void
     truncate_soft(const HTuckerTree<T>& gram, const double eps);
 
@@ -214,6 +218,62 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T> & tree);
 
 template <typename T>
 HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree);
+
+template <typename T>
+HTuckerTree<T>
+contract(const HTuckerTree<T> &tree1,
+         const HTuckerTree<T> &tree2);
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+contract_leaf(const HTuckerTree<T> &tree,
+              const HTuckerTree<T> &gram,
+              const int j);
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+contract(const HTuckerTree<T> &tree1,
+         const HTuckerTree<T> &tree2,
+         const int j);
+
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+projection(const HTuckerTree<T> &tree1,
+           const HTuckerTree<T> &tree2,
+           const int j);
+
+
+template <typename T>
+const flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >&
+extract(const HTuckerTree<T> &tree,
+        const DimensionIndex idx);
+
+
+template <typename T, typename I>
+void
+extract_core(const HTuckerTree<T>& tree,
+                   std::vector<flens::GeMatrix<
+                               flens::FullStorage<
+                               T, flens::ColMajor> > >& C,
+                   flens::DenseVector<
+                   flens::Array<I> >&                   ranks);
+
+template <typename T, typename I>
+void
+insert_core(      HTuckerTree<T>& tree,
+            const std::vector<flens::GeMatrix<
+                               flens::FullStorage<
+                               T, flens::ColMajor> > >& C,
+            const flens::DenseVector<
+                   flens::Array<I> >&                   ranks);
+
+
+template <typename T>
+void
+insert(HTuckerTree<T> &tree,
+       const flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >& B,
+       const DimensionIndex idx);
 
 template <typename T>
 HTuckerTree<T> gramians_elementary(const HTuckerTree<T>& tree);

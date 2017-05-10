@@ -642,6 +642,10 @@ HTuckerTree<T>::orthogonalize_svd(std::vector
 
     using flens::_;
 
+    typedef typename flens::GeMatrix<
+                     flens::FullStorage<T,cxxblas::ColMajor> >  Matrix;
+    typedef typename flens::DenseVector<flens::Array<T> >       Vector;
+
     HTuckerTree<T> Stree;
     Stree.set_tree(*this);
     if (!isorth) {
@@ -649,16 +653,23 @@ HTuckerTree<T>::orthogonalize_svd(std::vector
     }
 
     HTuckerTree<T> gram = gramians_orthogonal(*this);
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U(1,1);
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt(1,1);
-    flens::DenseVector<flens::Array<T> > s;
     GeneralTreeNode<HTuckerTreeNode<T> > *node;
 
     {
     GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
     GeneralTreeIterator<HTuckerTreeNode<T> > TITs= Stree.getGeneralTree().begin();
     for(; TITgram <= gram.getGeneralTree().end(); TITgram ++,TITs++){
-		flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+        Matrix& M = TITgram.getNode()->getContent()->getUorB();
+        auto n    = M.numRows();
+        auto m    = M.numCols();
+        Matrix U(m, std::min(m, n)), Vt;
+        Vector work, s(std::min(m, n));
+        flens::lapack::svd(flens::lapack::SVD::Job::Save,
+                           flens::lapack::SVD::Job::None,
+                           M,
+                           s,U,Vt,
+                           work);
+
         if (TITgram.getNode()->isLeaf()) {
             sigmas[TITgram.getNode()
                    ->getContent()->getIndex()[0]-1].resize(s.length());
@@ -690,18 +701,22 @@ HTuckerTree<T>::orthogonalize_svd(std::vector
 			int newnumel = Sref.numCols();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
-			
-			for(int l = 1; l <= newnumel; ++l){
-				for(int j = 1; j <= rcnumel; ++j){
-					for(int k = 1; k <= lcnumel; ++k){
-						T sum = 0.0;
-						for(int i = 1; i <= numel; ++i){
-							sum += Bref((i-1)*rcnumel + j,k)*Sref(i,l);
-						}
-						tmp((l-1)*rcnumel + j,k) = sum;
-					}
-				}
-			}
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Bt(rcnumel*lcnumel, numel);
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > BtSt(rcnumel*lcnumel, newnumel);
+
+            /* Bt*St */
+            for(int i = 1; i <= numel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    Bt(_((j-1)*rcnumel+1, j*rcnumel), i) = Bref(_((i-1)*rcnumel+1, i*rcnumel), j);
+                }
+            }
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.0, Bt, Sref,0.0, BtSt);
+            for(int i = 1; i <= newnumel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    tmp(_((i-1)*rcnumel+1, i*rcnumel), j) = BtSt(_((j-1)*rcnumel+1, j*rcnumel), i);
+                }
+            }
+
 			//hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
 			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
 			for(int i = 1; i <= newnumel; ++i){
@@ -4601,6 +4616,428 @@ HTuckerTree<T> gramians_nonorthogonal(const HTuckerTree<T> & tree)
     return gram;
 }
 
+
+template <typename T>
+HTuckerTree<T>
+contract(const HTuckerTree<T> &tree1,
+         const HTuckerTree<T> &tree2)
+{
+    using flens::_;
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node1, *node2, *nodem;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent1, *parent2;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree1);
+    HTuckerTree<T> Mtree;
+    Mtree.set_tree(tree1);
+
+    /* Compute M's */
+    auto TIT1     = tree1.getGeneralTree().end();
+    auto TIT2     = tree2.getGeneralTree().end();
+    auto TITm     = Mtree.getGeneralTree().end();
+    for (; TIT1 >= tree1.getGeneralTree().begin(); TIT1--, TIT2--, TITm--) {
+        node1      = TIT1.getNode();
+        node2      = TIT2.getNode();
+        nodem     = TITm.getNode();
+        if(node1->isLeaf()) {
+            Matrix tmp;
+            Matrix& U1 = node1->getContent()->getUorB();
+            Matrix& U2 = node2->getContent()->getUorB();
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., U2, U1, 0., tmp);
+            nodem->getContent()->setUorB(tmp);
+        } else if (node1->isInner()) {
+            Matrix& Mr = nodem->getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getfirstChild()->getContent()->getUorB();
+
+            Matrix& Bt1 = node1->getContent()->getUorB();
+            Matrix& Bt2 = node2->getContent()->getUorB();
+
+            int numel1   = node1->getContent()->getNumRows();
+            int numel2   = node2->getContent()->getNumRows();
+            int rcnumel1 = TIT1.getNode()->getContent()->getRightChildNumRows();
+            int rcnumel2 = TIT2.getNode()->getContent()->getRightChildNumRows();
+            int lcnumel2 = TIT2.getNode()->getContent()->getLeftChildNumRows();
+
+            Matrix tensor(rcnumel2*numel1, lcnumel2);
+            Matrix tmp(rcnumel1, lcnumel2);
+            /* Compute tensor product */
+            for (int i=1; i<=numel1; ++i) {
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                1.,
+                                Bt1(_((i-1)*rcnumel1+1, i*rcnumel1), _),
+                                Ml,
+                                0., tmp);
+                flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                1.,
+                                Mr,
+                                tmp,
+                                0., tensor(_((i-1)*rcnumel2+1, i*rcnumel2), _));
+            }
+
+            /* Compute B_t^H*tensor */
+            Matrix Mt(numel2, numel1);
+            Matrix tensornonblock(rcnumel2*lcnumel2, numel1);
+            Matrix Bnonblock(rcnumel2*lcnumel2, numel2);
+
+            for (int i=1; i<=numel1; ++i) {
+                for (int j=1; j<=rcnumel2; ++j) {
+                    tensornonblock(_((j-1)*lcnumel2+1, j*lcnumel2), i) =
+                    tensor((i-1)*rcnumel2+j, _);
+                }
+            }
+
+            for (int i=1; i<=numel2; ++i) {
+                for (int j=1; j<=rcnumel2; ++j) {
+                    Bnonblock(_((j-1)*lcnumel2+1, j*lcnumel2), i) =
+                    Bt2((i-1)*rcnumel2+j, _);
+                }
+            }
+
+            flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                            1., Bnonblock,
+                            tensornonblock,
+                            0., Mt);
+
+            nodem->getContent()->setUorB(Mt);
+        }
+    }
+
+    /* Compute gram */
+    TIT1          = tree1.getGeneralTree().begin();
+    TIT2          = tree2.getGeneralTree().begin();
+    auto GramTIT  = gram.getGeneralTree().begin();
+    TITm          = Mtree.getGeneralTree().begin();
+    for (; TIT1 <= tree1.getGeneralTree().end(); TIT1++, TIT2++, GramTIT++, TITm++) {
+        node1     = TIT1.getNode();
+        node2     = TIT2.getNode();
+        nodem     = TITm.getNode();
+        gramnode  = GramTIT.getNode();
+        if(node1->isRoot()){
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+        } else {
+            parent1 = node1->getParent()->getContent();
+            parent2 = node2->getParent()->getContent();
+
+            auto numel1         = node1->getContent()->getNumRows();
+            auto numel2         = node2->getContent()->getNumRows();
+            auto parentnumel1   = parent1->getNumRows();
+            auto parentnumel2   = parent2->getNumRows();
+            auto parentrcnumel1 = parent1->getRightChildNumRows();
+            auto parentrcnumel2 = parent2->getRightChildNumRows();
+            auto parentlcnumel1 = parent1->getLeftChildNumRows();
+            auto parentlcnumel2 = parent2->getLeftChildNumRows();
+            Matrix &parentG     = gramnode->getParent()->getContent()->getUorB();
+            Matrix &parentB1    = parent1->getUorB();
+            Matrix &parentB2    = parent2->getUorB();
+
+            Matrix& Mr = nodem->getParent()->
+                         getlastChild()->getContent()->getUorB();
+            Matrix& Ml = nodem->getParent()->
+                         getfirstChild()->getContent()->getUorB();
+
+            Matrix G(numel2, numel1);
+            if(node1 == node1->getParent()->getlastChild()){
+                /* G_tr */
+                Matrix B31(parentnumel1*parentlcnumel1, parentrcnumel1);
+                Matrix B31_2(parentnumel2*parentlcnumel2, parentrcnumel2);
+                for (int i=1; i<=parentnumel1; ++i) {
+                    for (int j=1; j<=parentlcnumel1; ++j) {
+                        B31((i-1)*parentlcnumel1+j, _) =
+                        parentB1(_((i-1)*parentrcnumel1+1, i*parentrcnumel1), j);
+                    }
+                }
+
+                for (int i=1; i<=parentnumel2; ++i) {
+                    for (int j=1; j<=parentlcnumel2; ++j) {
+                        B31_2((i-1)*parentlcnumel2+j, _) =
+                        parentB2(_((i-1)*parentrcnumel2+1, i*parentrcnumel2), j);
+                    }
+                }
+
+                /* Compute tensor product */
+                Matrix B31block(parentlcnumel1, parentnumel1);
+                Matrix tensor(parentnumel2*parentlcnumel2, parentrcnumel1);
+                Matrix tmp2(parentlcnumel1, parentnumel2);
+                Matrix tmp(parentlcnumel2, parentnumel2);
+                for (int i=1; i<=parentrcnumel1; ++i) {
+                    for (int j=1; j<=parentnumel1; ++j) {
+                        B31block(_, j) =
+                        B31(_((j-1)*parentlcnumel1+1, j*parentlcnumel1), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31block, parentG, 0., tmp2);
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Ml, tmp2, 0., tmp);
+                    for (int j=1; j<=parentnumel2; ++j) {
+                        tensor(_((j-1)*parentlcnumel2+1, j*parentlcnumel2), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tr */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B31_2, tensor, 0., G);
+            } else {
+                /* G_tl */
+                /* Compute tensor product */
+                Matrix B32block(parentrcnumel1, parentnumel1);
+                Matrix tensor(parentnumel2*parentrcnumel2, parentlcnumel1);
+                Matrix tmp2(parentrcnumel1, parentnumel2);
+                Matrix tmp(parentrcnumel2, parentnumel2);
+                for (int i=1; i<=parentlcnumel1; ++i) {
+                    for (int j=1; j<=parentnumel1; ++j) {
+                        B32block(_, j) =
+                        parentB1(_((j-1)*parentrcnumel1+1, j*parentrcnumel1), i);
+                    }
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32block, parentG, 0., tmp2);
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                                    1., Mr, tmp2, 0., tmp);
+                    for (int j=1; j<=parentnumel2; ++j) {
+                        tensor(_((j-1)*parentrcnumel2+1, j*parentrcnumel2), i) =
+                        tmp(_, j);
+                    }
+                }
+
+                /* Compute G_tl */
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., parentB2, tensor, 0., G);
+            }
+            gramnode->getContent()->setUorB(G);
+        }
+    }
+
+    return gram;
+}
+
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+contract_leaf(const HTuckerTree<T> &tree,
+              const HTuckerTree<T> &gram,
+              const int j)
+{
+    assert(j>0 && j<=tree.dim());
+    htucker::DimensionIndex idx(1);
+    idx[0] = j;
+
+    typedef typename flens::GeMatrix
+                    <flens::FullStorage
+                    <T, flens::ColMajor> >      Matrix;
+    Matrix ret;
+
+    for (auto itt=tree.getGeneralTree().end(),
+              itg=gram.getGeneralTree().end();
+              itt>=tree.getGeneralTree().begin();
+              itt--, itg--)
+    {
+        if (itt.getNode()->getContent()->getIndex()==idx) {
+            const Matrix &U  = itt.getNode()->getContent()->getUorB();
+            const Matrix &Gt = itg.getNode()->getContent()->getUorB();
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.,
+                            U, Gt, 0., ret);
+            return ret;
+        }
+    }
+
+    std::cerr << "Error: idx not found\n";
+    return ret;
+}
+
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+contract(const HTuckerTree<T> &tree1,
+         const HTuckerTree<T> &tree2,
+         const int j)
+{
+    assert(j>0 && j<=tree1.dim());
+    htucker::DimensionIndex idx(1);
+    idx[0] = j;
+
+    typedef typename flens::GeMatrix
+                    <flens::FullStorage
+                    <T, flens::ColMajor> >      Matrix;
+    Matrix ret;
+    HTuckerTree<T> gram = contract(tree1, tree2);
+
+    for (auto itt=tree1.getGeneralTree().end(),
+              itg=gram.getGeneralTree().end();
+              itt>=tree1.getGeneralTree().begin();
+              itt--, itg--)
+    {
+        if (itt.getNode()->getContent()->getIndex()==idx) {
+            const Matrix &U  = itt.getNode()->getContent()->getUorB();
+            const Matrix &Gt = itg.getNode()->getContent()->getUorB();
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans, 1.,
+                            U, Gt, 0., ret);
+            return ret;
+        }
+    }
+
+    std::cerr << "Error: idx not found\n";
+    return ret;
+}
+
+
+template <typename T>
+flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >
+projection(const HTuckerTree<T> &tree1,
+           const HTuckerTree<T> &tree2,
+           const int j)
+{
+    assert(j>0 && j<=tree1.dim());
+    htucker::DimensionIndex idx(1);
+    idx[0] = j;
+
+    typedef typename flens::GeMatrix
+                    <flens::FullStorage
+                    <T, flens::ColMajor> >      Matrix;
+    Matrix ret;
+    HTuckerTree<T> gram = contract(tree1, tree2);
+
+    for (auto itg=gram.getGeneralTree().end();
+              itg>=gram.getGeneralTree().begin();
+              itg--)
+    {
+        if (itg.getNode()->getContent()->getIndex()==idx) {
+            const Matrix &Gt = itg.getNode()->getContent()->getUorB();
+            return Gt;
+        }
+    }
+
+    std::cerr << "Error: idx not found\n";
+    return ret;
+}
+
+
+template <typename T>
+const flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >&
+extract(const HTuckerTree<T> &tree,
+        const DimensionIndex idx)
+{
+    for (auto itt=tree.getGeneralTree().end();
+              itt>=tree.getGeneralTree().begin();
+              itt--)
+    {
+        if (itt.getNode()->getContent()->getIndex()==idx) {
+            return itt.getNode()->getContent()->getUorB();
+        }
+    }
+
+    std::cerr << "Error: idx not found\n";
+    exit(1); // High end exception handling.
+}
+
+
+template <typename T, typename I>
+void
+extract_core(const HTuckerTree<T>& tree,
+                   std::vector<flens::GeMatrix<
+                               flens::FullStorage<
+                               T, flens::ColMajor> > >& C,
+                   flens::DenseVector<
+                   flens::Array<I> >&                   ranks)
+{
+    using flens::_;
+
+    typedef typename flens::GeMatrix<
+                     flens::FullStorage<
+                     T, flens::ColMajor> >                      Matrix;
+    typedef typename std::vector<Matrix>::size_type             size_type;
+    typedef typename flens::DenseVector<
+                     flens::Array<I> >                          Vector;
+
+    size_type count=0;
+    for (auto itt=tree.getGeneralTree().end();
+              itt>=tree.getGeneralTree().begin();
+              itt--)
+    {
+        auto node = itt.getNode();
+        if (!node->isLeaf()) {
+            auto &U   = node->getContent()->getUorB();
+            auto rank = node->getContent()->getNumRows();
+
+            if (C.size()>=count+1) C[count] = U;
+            else                   C.push_back(U);
+
+            if ((unsigned) ranks.length()>=count+1) {
+                ranks(count+1) = rank;
+            } else {
+                Vector tmp = ranks;
+                ranks.resize(count+1);
+                ranks(_(1, tmp.length())) = tmp;
+            }
+
+            ++count;
+        }
+    }
+}
+
+
+template <typename T, typename I>
+void
+insert_core(      HTuckerTree<T>& tree,
+            const std::vector<flens::GeMatrix<
+                               flens::FullStorage<
+                               T, flens::ColMajor> > >& C,
+            const flens::DenseVector<
+                   flens::Array<I> >&                   ranks)
+{
+    using flens::_;
+
+    typedef typename flens::GeMatrix<
+                     flens::FullStorage<
+                     T, flens::ColMajor> >                      Matrix;
+    typedef typename std::vector<Matrix>::size_type             size_type;
+
+    size_type count=0;
+    for (auto itt=tree.getGeneralTree().end();
+              itt>=tree.getGeneralTree().begin();
+              itt--)
+    {
+        auto node = itt.getNode();
+        if (!node->isLeaf()) {
+            auto     numel   = ranks(count+1);
+            auto     lcnumel = C[count].numCols();
+            unsigned rcnumel = C[count].numRows()/numel;
+            node->getContent()->setUorB(C[count]);
+            node->getContent()->setNumRows(numel);
+            node->getContent()->setLeftChildNumRows(lcnumel);
+            node->getContent()->setRightChildNumRows(rcnumel);
+
+            ++count;
+        }
+    }
+}
+
+
+template <typename T>
+void
+insert(HTuckerTree<T> &tree,
+       const flens::GeMatrix<flens::FullStorage<T, flens::ColMajor> >& B,
+       const DimensionIndex idx)
+{
+    for (auto itt=tree.getGeneralTree().end();
+              itt>=tree.getGeneralTree().begin();
+              itt--)
+    {
+        if (itt.getNode()->getContent()->getIndex()==idx) {
+            itt.getNode()->getContent()->getUorB() = B;
+            return;
+        }
+    }
+
+    std::cerr << "Error: idx not found\n";
+}
+
+
 template <typename T>
 HTuckerTree<T> gramians_nonorthogonal2(const HTuckerTree<T> & tree){
     using flens::_;
@@ -5060,55 +5497,54 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
     {
     GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().begin();
     GeneralTreeIterator<HTuckerTreeNode<T> > TITs = Stree.getGeneralTree().begin();
-	for(; TIT <= this->getGeneralTree().end(); TIT++,TITs++){
-		node = TIT.getNode();
-		
-		if(node->isLeaf()){
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
-			flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
-			node->getContent()->setUorB(tmp);
-			node->getContent()->setNumRows(tmp.numCols());
-		} else {
-			int rcnumel = node->getContent()->getRightChildNumRows();
-			int lcnumel = node->getContent()->getLeftChildNumRows();
-			
-			int numel = node->getContent()->getNumRows();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITs.getNode()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITs.getNode()->getfirstChild()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITs.getNode()->getlastChild()->getContent()->getUorB();
-			int newnumel = Sref.numCols();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
-			
-			for(int l = 1; l <= newnumel; ++l){
-				for(int j = 1; j <= rcnumel; ++j){
-					for(int k = 1; k <= lcnumel; ++k){
-						T sum = 0.0;
-						for(int i = 1; i <= numel; ++i){
-							sum += Bref((i-1)*rcnumel + j,k)*Sref(i,l);
-						}
-						tmp((l-1)*rcnumel + j,k) = sum;
-					}
-				}
-			}
-			//hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
-			for(int i = 1; i <= newnumel; ++i){
-				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1;
-				flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,tmp(_((i-1)*rcnumel+1,i*rcnumel),_),Slref,0.0,tmp1);
-				flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp2;
-				flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Srref,tmp1,0.0,tmp2);
-				newB(_((i-1)*Srref.numCols()+1,i*Srref.numCols()),_) = tmp2;
-			}
-			node->getContent()->setUorB(newB);
-			node->getContent()->setNumRows(newnumel);
-			node->getContent()->setLeftChildNumRows(Slref.numCols());
-			node->getContent()->setRightChildNumRows(Srref.numCols());
-		
-		}
-		
-		
-	}
+    for(; TIT <= this->getGeneralTree().end(); TIT++,TITs++){
+        node = TIT.getNode();
+
+        if(node->isLeaf()){
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
+            flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
+            node->getContent()->setUorB(tmp);
+            node->getContent()->setNumRows(tmp.numCols());
+        } else {
+            int rcnumel = node->getContent()->getRightChildNumRows();
+            int lcnumel = node->getContent()->getLeftChildNumRows();
+
+            int numel = node->getContent()->getNumRows();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITs.getNode()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITs.getNode()->getfirstChild()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITs.getNode()->getlastChild()->getContent()->getUorB();
+            int newnumel = Sref.numCols();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Bt(rcnumel*lcnumel, numel);
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > BtSt(rcnumel*lcnumel, newnumel);
+
+            /* Bt*St */
+            for(int i = 1; i <= numel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    Bt(_((j-1)*rcnumel+1, j*rcnumel), i) = Bref(_((i-1)*rcnumel+1, i*rcnumel), j);
+                }
+            }
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.0, Bt, Sref,0.0, BtSt);
+            for(int i = 1; i <= newnumel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    tmp(_((i-1)*rcnumel+1, i*rcnumel), j) = BtSt(_((j-1)*rcnumel+1, j*rcnumel), i);
+                }
+            }
+
+            //hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
+            for(int i = 1; i <= newnumel; ++i){
+                flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1;
+                flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,tmp(_((i-1)*rcnumel+1,i*rcnumel),_),Slref,0.0,tmp1);
+                flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Srref,tmp1,0.0,newB(_((i-1)*Srref.numCols()+1,i*Srref.numCols()),_));
+            }
+            node->getContent()->setUorB(newB);
+            node->getContent()->setNumRows(newnumel);
+            node->getContent()->setLeftChildNumRows(Slref.numCols());
+            node->getContent()->setRightChildNumRows(Srref.numCols());
+        }
+    }
     }
 }
 
