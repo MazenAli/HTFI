@@ -5551,6 +5551,110 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
 
 template <typename T>
 void
+HTuckerTree<T>::truncate2(double eps, bool isorth)
+{
+    using flens::_;
+    eps *= eps;
+    eps /= 2.*d-3.;
+
+    HTuckerTree<T> Stree;
+    Stree.set_tree(*this);
+    if (!isorth) {
+       this->orthogonalize();
+    }
+
+    HTuckerTree<T> gram = gramians_orthogonal(*this);
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
+    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
+    flens::DenseVector<flens::Array<T> > s;
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+
+    {
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITs= Stree.getGeneralTree().begin();
+
+    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++){
+        flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+
+        T error                      = 0.;
+        FLENS_DEFAULT_INDEXTYPE rank = s.length();
+        std::cout << "Singular values\n" << s << std::endl;
+        std::cout << "Rank begin = " << rank << std::endl;
+        std::cout << "Tolerance  = " << eps << std::endl;
+        for (rank; rank>=1; --rank) {
+            error += s(rank);
+            std::cout << "Current error = " << error << std::endl;
+            if (error > eps || rank == 1) {
+                break;
+            }
+        }
+        std::cout << "Rank end = " << rank << std::endl;
+
+        exit(1);
+
+        TITs.getNode()->getContent()->
+            setUorB(U(_,_(1,std::min(U.numRows(), rank))));
+    }
+    }
+
+
+    {
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITs = Stree.getGeneralTree().begin();
+    for(; TIT <= this->getGeneralTree().end(); TIT++,TITs++){
+        node = TIT.getNode();
+
+        if(node->isLeaf()){
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
+            flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
+            node->getContent()->setUorB(tmp);
+            node->getContent()->setNumRows(tmp.numCols());
+        } else {
+            int rcnumel = node->getContent()->getRightChildNumRows();
+            int lcnumel = node->getContent()->getLeftChildNumRows();
+
+            int numel = node->getContent()->getNumRows();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITs.getNode()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITs.getNode()->getfirstChild()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITs.getNode()->getlastChild()->getContent()->getUorB();
+            int newnumel = Sref.numCols();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Bt(rcnumel*lcnumel, numel);
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > BtSt(rcnumel*lcnumel, newnumel);
+
+            /* Bt*St */
+            for(int i = 1; i <= numel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    Bt(_((j-1)*rcnumel+1, j*rcnumel), i) = Bref(_((i-1)*rcnumel+1, i*rcnumel), j);
+                }
+            }
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.0, Bt, Sref,0.0, BtSt);
+            for(int i = 1; i <= newnumel; ++i) {
+                for(int j = 1; j <= lcnumel; ++j) {
+                    tmp(_((i-1)*rcnumel+1, i*rcnumel), j) = BtSt(_((j-1)*rcnumel+1, j*rcnumel), i);
+                }
+            }
+
+            //hier haben wir nun als B_t*S_t berechnet. Fehlt noch (S_tl^T x S_tr^T)*B_t*S_t
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > newB(newnumel*Srref.numCols(),Slref.numCols());
+            for(int i = 1; i <= newnumel; ++i){
+                flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp1;
+                flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,tmp(_((i-1)*rcnumel+1,i*rcnumel),_),Slref,0.0,tmp1);
+                flens::blas::mm(cxxblas::Trans,cxxblas::NoTrans,1.0,Srref,tmp1,0.0,newB(_((i-1)*Srref.numCols()+1,i*Srref.numCols()),_));
+            }
+            node->getContent()->setUorB(newB);
+            node->getContent()->setNumRows(newnumel);
+            node->getContent()->setLeftChildNumRows(Slref.numCols());
+            node->getContent()->setRightChildNumRows(Srref.numCols());
+        }
+    }
+    }
+}
+
+
+template <typename T>
+void
 HTuckerTree<T>::truncate_hsvd(const T eps)
 {
     auto gram = gramians_nonorthogonal(*this);

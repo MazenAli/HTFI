@@ -99,6 +99,8 @@ public:
 
     void
     truncate(double eps, bool isorth = false);
+    void
+    truncate2(double eps, bool isorth = false);
 
     /* Works only with balanced trees so far */
     void
