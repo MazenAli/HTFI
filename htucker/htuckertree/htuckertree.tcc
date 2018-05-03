@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cassert>
 #include <cmath>
-#include <ctime>
+#include <chrono>
 
 namespace htucker{
 
@@ -4281,7 +4281,7 @@ HTuckerTree<T> subtree(const HTuckerTree<T> &tree, const int mindim, const int m
 
 
 template <typename T>
-HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T>& tree)
+HTuckerTree<T> gramians_orthogonal3(const HTuckerTree<T>& tree)
 {
     using flens::_;
 
@@ -4295,14 +4295,30 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T>& tree)
 
     GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.getGeneralTree().begin();
     GeneralTreeIterator<HTuckerTreeNode<T> > GramTIT = gram.getGeneralTree().begin();
+
+    std::chrono::duration<T> diff;
+    auto tmm   = diff.count();
+    tmm        = 0.;
+    auto talloc = tmm;
+    auto tcopy = tmm;
+    auto tdata = tmm;
+
     for(; TIT <= tree.getGeneralTree().end(); TIT++,GramTIT++){
         node = TIT.getNode();
         gramnode = GramTIT.getNode();
         if(node->isRoot()){
+            auto t0 = std::chrono::high_resolution_clock::now();
+
             Matrix M(1,1);
             M = 1;
             gramnode->getContent()->setUorB(M);
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
         } else {
+            auto t0 = std::chrono::high_resolution_clock::now();
+
             parent = node->getParent()->getContent();
 
             int numel         = node->getContent()->getNumRows();
@@ -4311,137 +4327,466 @@ HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T>& tree)
             int parentlcnumel = parent->getLeftChildNumRows();
             Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
             Matrix &parentB   = parent->getUorB();
-            Matrix G(numel,numel);
+            Matrix &G         = gramnode->getContent()->getUorB();
+            G.resize(numel, numel);
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
             if(node == node->getParent()->getlastChild()){
+                t0 = std::chrono::high_resolution_clock::now();
                 /* G_tr */
                 Matrix B31(parentnumel*parentlcnumel, parentrcnumel);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
+
+                t0 = std::chrono::high_resolution_clock::now();
                 for (int i=1; i<=parentnumel; ++i) {
                     for (int j=1; j<=parentlcnumel; ++j) {
                         B31((i-1)*parentlcnumel+j, _) =
                         parentB(_((i-1)*parentrcnumel+1, i*parentrcnumel), j);
                     }
                 }
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tcopy  += diff.count();
 
                 /* Compute tensor product */
+                t0 = std::chrono::high_resolution_clock::now();
                 Matrix B31block(parentlcnumel, parentnumel);
                 Matrix tensor(parentnumel*parentlcnumel, parentrcnumel);
                 Matrix tmp(parentlcnumel, parentnumel);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
+
                 for (int i=1; i<=parentrcnumel; ++i) {
+                    t0 = std::chrono::high_resolution_clock::now();
                     for (int j=1; j<=parentnumel; ++j) {
                         B31block(_, j) =
                         B31(_((j-1)*parentlcnumel+1, j*parentlcnumel), i);
                     }
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
                     flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
                                     1., B31block, parentG, 0., tmp);
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tmm  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
                     for (int j=1; j<=parentnumel; ++j) {
                         tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel), i) =
                         tmp(_, j);
                     }
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
                 }
 
                 /* Compute G_tr */
+                t0 = std::chrono::high_resolution_clock::now();
                 flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
                                 1., B31, tensor, 0., G);
+                t1 = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tmm  += diff.count();
             } else {
                 /* G_tl */
                 /* Compute tensor product */
+                t0 = std::chrono::high_resolution_clock::now();
                 Matrix B32block(parentrcnumel, parentnumel);
                 Matrix tensor(parentnumel*parentrcnumel, parentlcnumel);
                 Matrix tmp(parentrcnumel, parentnumel);
+                t1 = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
                 for (int i=1; i<=parentlcnumel; ++i) {
+                    t0 = std::chrono::high_resolution_clock::now();
                     for (int j=1; j<=parentnumel; ++j) {
                         B32block(_, j) =
                         parentB(_((j-1)*parentrcnumel+1, j*parentrcnumel), i);
                     }
+                    t1 = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
                     flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
                                     1., B32block, parentG, 0., tmp);
+                    t1    = std::chrono::high_resolution_clock::now();
+                    diff  = t1 - t0;
+                    tmm  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
                     for (int j=1; j<=parentnumel; ++j) {
                         tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel), i) =
                         tmp(_, j);
                     }
+                    t1    = std::chrono::high_resolution_clock::now();
+                    diff  = t1 - t0;
+                    tcopy += diff.count();
                 }
 
                 /* Compute G_tl */
+                t0 = std::chrono::high_resolution_clock::now();
                 flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
                                 1., parentB, tensor, 0., G);
+                t1    = std::chrono::high_resolution_clock::now();
+                diff  = t1 - t0;
+                tmm += diff.count();
             }
-            gramnode->getContent()->setUorB(G);
         }
     }
 
+    tdata = tcopy+talloc;
+    std::cout << tdata  << " secs for data\n";
+    std::cout << talloc << " secs to allocate\n";
+    std::cout << tcopy  << " secs to copy\n";
+    std::cout << tmm    << " secs to perform MM\n";
     return gram;
 }
 
 
 template <typename T>
-HTuckerTree<T> gramians_orthogonal2(const HTuckerTree<T> & tree){
-	
-	GeneralTreeNode<HTuckerTreeNode<T> > *node;
-	GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
-	HTuckerTreeNode<T> *parent;
-	HTuckerTree<T> gram(tree);
+HTuckerTree<T> gramians_orthogonal2(const HTuckerTree<T>& tree)
+{
+    using flens::_;
 
-    std::cout << "gramians_orthogonal: max rank = " << tree.max_rank() << std::endl;
-	
-    {
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree);
+
     GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.getGeneralTree().begin();
     GeneralTreeIterator<HTuckerTreeNode<T> > GramTIT = gram.getGeneralTree().begin();
+
+    std::chrono::duration<T> diff;
+    auto tmm   = diff.count();
+    tmm        = 0.;
+    auto tdata = tmm;
+    auto talloc = tmm;
+    auto tcopy = tmm;
+
     for(; TIT <= tree.getGeneralTree().end(); TIT++,GramTIT++){
-		node = TIT.getNode();
-		gramnode = GramTIT.getNode();
-		if(node->isRoot()){
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > M(1,1);
-			M = 1;
-			gramnode->getContent()->setUorB(M);
-		} else {
-			parent = node->getParent()->getContent();
-			
-			int numel = node->getContent()->getNumRows();
-			int parentnumel = parent->getNumRows();
-			int parentrcnumel = node->getParent()->getContent()->getRightChildNumRows();
-			int parentlcnumel = node->getParent()->getContent()->getLeftChildNumRows();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &parentG = gramnode->getParent()->getContent()->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &parentB = parent->getUorB();
-			flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > B(numel,numel);
-			if(node == node->getParent()->getlastChild()){
-				for(int i = 1; i <= numel; ++i){
-					for(int j = 1; j <= numel; ++j){
-						T sum = 0;
-						for(int k = 1; k <= parentnumel; ++k){
-							for(int l = 1; l <= parentnumel; ++l){
-								for(int m = 1; m <= parentlcnumel; ++m){
-									sum += parentG(k,l)*parentB((k-1)*parentrcnumel + i, m)*parentB((l-1)*parentrcnumel + j, m);
-								}
-							}
-						}
-	
-						B(i,j) = sum;
-					}
-				}
-			} else {
-				for(int i = 1; i <= numel; ++i){
-					for(int j = 1; j <= numel; ++j){
-						T sum = 0;
-						for(int k = 1; k <= parentnumel; ++k){
-							for(int l = 1; l <= parentnumel; ++l){
-								for(int m = 1; m <= parentrcnumel; ++m){
-									sum += parentG(k,l)*parentB((k-1)*parentrcnumel + m, i)*parentB((l-1)*parentrcnumel + m, j);
-								}
-							}
-						}
-	
-						B(i,j) = sum;
-					}
-				}
-			
-			}
-			gramnode->getContent()->setUorB(B);
-		}
-	}
+        node = TIT.getNode();
+        gramnode = GramTIT.getNode();
+        if(node->isRoot()){
+            auto t0 = std::chrono::high_resolution_clock::now();
+
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
+        } else {
+            auto t0 = std::chrono::high_resolution_clock::now();
+
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentnumel   = parent->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+            Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
+            Matrix &parentB   = parent->getUorB();
+
+            Matrix G(numel,numel);
+            Matrix B3(parentnumel, parentlcnumel*parentrcnumel);
+            Matrix Bmod(parentnumel, parentlcnumel*parentrcnumel);
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
+
+            t0 = std::chrono::high_resolution_clock::now();
+            for (int it = 1; it <= parentnumel; ++it) {
+                for (int itr = 1; itr <= parentrcnumel; ++itr) {
+                    B3(it, _((itr-1)*parentlcnumel + 1, itr*parentlcnumel))
+                    = parentB((it-1)*parentrcnumel + itr, _);
+                }
+            }
+            t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            tcopy  += diff.count();
+
+            t0 = std::chrono::high_resolution_clock::now();
+            flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans,
+                            1., parentG, B3, 0., Bmod);
+            t1      = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            tmm  += diff.count();
+
+            if(node == node->getParent()->getlastChild()){
+                /* G_tr */
+                t0 = std::chrono::high_resolution_clock::now();
+                Matrix Bt13(parentnumel*parentlcnumel, parentrcnumel);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
+
+                t0 = std::chrono::high_resolution_clock::now();
+                for (int i = 1; i <= parentnumel; ++i) {
+                    for (int j = 1; j <= parentlcnumel; ++j) {
+                        Bt13((i-1)*parentlcnumel + j, _) =
+                        parentB(_((i-1)*parentrcnumel + 1, i*parentrcnumel), j);
+                    }
+                }
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tcopy  += diff.count();
+
+                t0 = std::chrono::high_resolution_clock::now();
+                Matrix Bmod13(parentnumel*parentlcnumel, parentrcnumel);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
+
+                t0 = std::chrono::high_resolution_clock::now();
+                for (int i = 1; i <= parentnumel; ++i) {
+                    for (int j = 1; j <= parentrcnumel; ++j) {
+                        Bmod13(_((i-1)*parentlcnumel + 1, i*parentlcnumel), j)
+                        = Bmod(i, _((j-1)*parentlcnumel + 1, j*parentlcnumel));
+                    }
+                }
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tcopy  += diff.count();
+
+                /* Compute G_tr */
+                t0 = std::chrono::high_resolution_clock::now();
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., Bt13, Bmod13, 0., G);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tmm  += diff.count();
+            } else {
+                /* G_tl */
+                /* Compute tensor product */
+                t0 = std::chrono::high_resolution_clock::now();
+                Matrix Bmod23(parentnumel*parentrcnumel, parentlcnumel);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                talloc  += diff.count();
+
+                t0 = std::chrono::high_resolution_clock::now();
+                for (int i = 1; i <= parentnumel; ++i) {
+                    for (int j = 1; j <= parentrcnumel; ++j) {
+                        Bmod23((i-1)*parentrcnumel+j, _)
+                        = Bmod(i, _((j-1)*parentlcnumel + 1, j*parentlcnumel));
+                    }
+                }
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tcopy  += diff.count();
+
+                /* Compute G_tl */
+                t0 = std::chrono::high_resolution_clock::now();
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., parentB, Bmod23, 0., G);
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tmm  += diff.count();
+            }
+            t0 = std::chrono::high_resolution_clock::now();
+            gramnode->getContent()->setUorB(G);
+            t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            tcopy  += diff.count();
+            talloc  += diff.count();
+        }
     }
 
-	return gram;
+    tdata = tcopy+talloc;
+    std::cout << tdata  << " secs for data\n";
+    std::cout << talloc << " secs to allocate\n";
+    std::cout << tcopy  << " secs to copy\n";
+    std::cout << tmm   << " secs to perform MM\n";
+    return gram;
+}
 
+
+template <typename T>
+HTuckerTree<T> gramians_orthogonal(const HTuckerTree<T>& tree)
+{
+    using flens::_;
+
+    typedef flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > Matrix;
+    typedef typename Matrix::View                                     MView;
+
+    GeneralTreeNode<HTuckerTreeNode<T> > *node;
+    GeneralTreeNode<HTuckerTreeNode<T> > *gramnode;
+    HTuckerTreeNode<T> *parent;
+    HTuckerTree<T> gram;
+    gram.set_tree(tree);
+
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = tree.getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > GramTIT = gram.getGeneralTree().begin();
+
+    std::chrono::duration<T> diff;
+    auto tmm   = diff.count();
+    tmm        = 0.;
+    auto talloc = tmm;
+    auto tcopy = tmm;
+    auto tdata = tmm;
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto r = tree.max_rank();
+    Matrix Buffer(r*r, 4*r);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    diff    = t1 - t0;
+    talloc  += diff.count();
+
+    for(; TIT <= tree.getGeneralTree().end(); TIT++,GramTIT++){
+        node = TIT.getNode();
+        gramnode = GramTIT.getNode();
+        if(node->isRoot()){
+            t0 = std::chrono::high_resolution_clock::now();
+
+            Matrix M(1,1);
+            M = 1;
+            gramnode->getContent()->setUorB(M);
+
+            t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
+        } else {
+            t0 = std::chrono::high_resolution_clock::now();
+
+            parent = node->getParent()->getContent();
+
+            int numel         = node->getContent()->getNumRows();
+            int parentnumel   = parent->getNumRows();
+            int parentrcnumel = parent->getRightChildNumRows();
+            int parentlcnumel = parent->getLeftChildNumRows();
+            Matrix &parentG   = gramnode->getParent()->getContent()->getUorB();
+            Matrix &parentB   = parent->getUorB();
+            Matrix &G         = gramnode->getContent()->getUorB();
+            G.resize(numel, numel);
+
+            t1 = std::chrono::high_resolution_clock::now();
+            diff    = t1 - t0;
+            talloc  += diff.count();
+            if(node == node->getParent()->getlastChild()){
+                /* G_tr */
+                MView B31 = Buffer(_(1, parentnumel*parentlcnumel),
+                                   _(1, parentrcnumel));
+
+                t0 = std::chrono::high_resolution_clock::now();
+                for (int i=1; i<=parentnumel; ++i) {
+                    for (int j=1; j<=parentlcnumel; ++j) {
+                        B31((i-1)*parentlcnumel+j, _) =
+                        parentB(_((i-1)*parentrcnumel+1, i*parentrcnumel), j);
+                    }
+                }
+                t1      = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tcopy  += diff.count();
+
+                /* Compute tensor product */
+                MView B31block = Buffer(_(1, parentlcnumel),
+                                        _(r+1, r+parentnumel));
+                MView tensor   = Buffer(_(1, parentnumel*parentlcnumel),
+                                        _(2*r+1, 2*r+parentrcnumel));
+                MView tmp      = Buffer(_(1, parentlcnumel), 
+                                        _(3*r+1, 3*r+parentnumel));
+
+                for (int i=1; i<=parentrcnumel; ++i) {
+                    t0 = std::chrono::high_resolution_clock::now();
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B31block(_, j) =
+                        B31(_((j-1)*parentlcnumel+1, j*parentlcnumel), i);
+                    }
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B31block, parentG, 0., tmp);
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tmm  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentlcnumel+1, j*parentlcnumel), i) =
+                        tmp(_, j);
+                    }
+                    t1      = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
+                }
+
+                /* Compute G_tr */
+                t0 = std::chrono::high_resolution_clock::now();
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., B31, tensor, 0., G);
+                t1 = std::chrono::high_resolution_clock::now();
+                diff    = t1 - t0;
+                tmm  += diff.count();
+            } else {
+                /* G_tl */
+                /* Compute tensor product */
+                MView B32block = Buffer(_(1, parentrcnumel),
+                                        _(1, parentnumel));
+                MView tensor   = Buffer(_(1, parentnumel*parentrcnumel),
+                                        _(r+1, r+parentlcnumel));
+                MView tmp      = Buffer(_(1, parentrcnumel),
+                                        _(2*r+1, 2*r+parentnumel));
+                for (int i=1; i<=parentlcnumel; ++i) {
+                    t0 = std::chrono::high_resolution_clock::now();
+                    for (int j=1; j<=parentnumel; ++j) {
+                        B32block(_, j) =
+                        parentB(_((j-1)*parentrcnumel+1, j*parentrcnumel), i);
+                    }
+                    t1 = std::chrono::high_resolution_clock::now();
+                    diff    = t1 - t0;
+                    tcopy  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
+                    flens::blas::mm(cxxblas::NoTrans, cxxblas::Trans,
+                                    1., B32block, parentG, 0., tmp);
+                    t1    = std::chrono::high_resolution_clock::now();
+                    diff  = t1 - t0;
+                    tmm  += diff.count();
+
+                    t0 = std::chrono::high_resolution_clock::now();
+                    for (int j=1; j<=parentnumel; ++j) {
+                        tensor(_((j-1)*parentrcnumel+1, j*parentrcnumel), i) =
+                        tmp(_, j);
+                    }
+                    t1    = std::chrono::high_resolution_clock::now();
+                    diff  = t1 - t0;
+                    tcopy += diff.count();
+                }
+
+                /* Compute G_tl */
+                t0 = std::chrono::high_resolution_clock::now();
+                flens::blas::mm(cxxblas::Trans, cxxblas::NoTrans,
+                                1., parentB, tensor, 0., G);
+                t1    = std::chrono::high_resolution_clock::now();
+                diff  = t1 - t0;
+                tmm += diff.count();
+            }
+        }
+    }
+
+//    tdata = tcopy+talloc;
+//    std::cout << tdata  << " secs for data\n";
+//    std::cout << talloc << " secs to allocate\n";
+//    std::cout << tcopy  << " secs to copy\n";
+//    std::cout << tmm    << " secs to perform MM\n";
+    return gram;
 }
 
 
@@ -5436,9 +5781,10 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
     }
 
     HTuckerTree<T> gram = gramians_orthogonal(*this);
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
-    flens::DenseVector<flens::Array<T> > s;
+
+    flens::lapack::SVD::Job jobU  = flens::lapack::SVD::Save;
+    flens::lapack::SVD::Job jobVt = flens::lapack::SVD::None;
+
     GeneralTreeNode<HTuckerTreeNode<T> > *node;
 
     {
@@ -5449,7 +5795,21 @@ HTuckerTree<T>::truncate(double eps, bool isorth)
                                                         Us;
     int count = 0;
     for(; TITgram <= gram.getGeneralTree().end(); TITgram ++){
-        flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+        flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
+        flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
+        flens::DenseVector<flens::Array<T> > s;
+        flens::DenseVector<flens::Array<T> > work;
+
+        auto& Gt = TITgram.getNode()->getContent()->getUorB();
+        auto  m  = Gt.numRows();
+        auto  r  = std::min(m, Gt.numCols());
+        U.resize(m, r);
+        s.resize(r);
+
+        flens::lapack::svd(jobU, jobVt,
+                           Gt, s, U, Vt,
+                           work);
+
         Us.push_back(U);
         svals.push_back(s);
         count += s.length();
@@ -5557,56 +5917,60 @@ HTuckerTree<T>::truncate2(double eps, bool isorth)
     eps *= eps;
     eps /= 2.*d-3.;
 
-    HTuckerTree<T> Stree;
-    Stree.set_tree(*this);
     if (!isorth) {
        this->orthogonalize();
     }
 
     HTuckerTree<T> gram = gramians_orthogonal(*this);
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
-    flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
-    flens::DenseVector<flens::Array<T> > s;
+
+
+    flens::lapack::SVD::Job jobU  = flens::lapack::SVD::Save;
+    flens::lapack::SVD::Job jobVt = flens::lapack::SVD::None;
+
     GeneralTreeNode<HTuckerTreeNode<T> > *node;
 
     {
     GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
-    GeneralTreeIterator<HTuckerTreeNode<T> > TITs= Stree.getGeneralTree().begin();
 
-    for(; TITgram <= gram.getGeneralTree().end(); TITgram ++){
-        flens::svd(TITgram.getNode()->getContent()->getUorB(),s,U,Vt);
+    for(; TITgram <= gram.getGeneralTree().end(); TITgram++){
+        flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > U;
+        flens::GeMatrix<flens::FullStorage<double,cxxblas::ColMajor> > Vt;
+        flens::DenseVector<flens::Array<T> > s;
+        flens::DenseVector<flens::Array<T> > work;
+
+        auto& Gt = TITgram.getNode()->getContent()->getUorB();
+        auto  m  = Gt.numRows();
+        auto  r  = std::min(m, Gt.numCols());
+        U.resize(m, r);
+        s.resize(r);
+
+        flens::lapack::svd(jobU, jobVt,
+                           Gt, s, U, Vt,
+                           work);
 
         T error                      = 0.;
         FLENS_DEFAULT_INDEXTYPE rank = s.length();
-        std::cout << "Singular values\n" << s << std::endl;
-        std::cout << "Rank begin = " << rank << std::endl;
-        std::cout << "Tolerance  = " << eps << std::endl;
-        for (rank; rank>=1; --rank) {
+        for (; rank>=1; --rank) {
             error += s(rank);
-            std::cout << "Current error = " << error << std::endl;
             if (error > eps || rank == 1) {
                 break;
             }
         }
-        std::cout << "Rank end = " << rank << std::endl;
 
-        exit(1);
-
-        TITs.getNode()->getContent()->
+        TITgram.getNode()->getContent()->
             setUorB(U(_,_(1,std::min(U.numRows(), rank))));
     }
     }
 
-
     {
-    GeneralTreeIterator<HTuckerTreeNode<T> > TIT = this->getGeneralTree().begin();
-    GeneralTreeIterator<HTuckerTreeNode<T> > TITs = Stree.getGeneralTree().begin();
-    for(; TIT <= this->getGeneralTree().end(); TIT++,TITs++){
+    GeneralTreeIterator<HTuckerTreeNode<T> > TIT     = this->getGeneralTree().begin();
+    GeneralTreeIterator<HTuckerTreeNode<T> > TITgram = gram.getGeneralTree().begin();
+    for(; TIT <= this->getGeneralTree().end(); TIT++,TITgram++){
         node = TIT.getNode();
 
         if(node->isLeaf()){
             flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp;
-            flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITs.getNode()->getContent()->getUorB(),0.0,tmp);
+            flens::blas::mm(cxxblas::NoTrans,cxxblas::NoTrans,1.0,node->getContent()->getUorB(),TITgram.getNode()->getContent()->getUorB(),0.0,tmp);
             node->getContent()->setUorB(tmp);
             node->getContent()->setNumRows(tmp.numCols());
         } else {
@@ -5614,9 +5978,9 @@ HTuckerTree<T>::truncate2(double eps, bool isorth)
             int lcnumel = node->getContent()->getLeftChildNumRows();
 
             int numel = node->getContent()->getNumRows();
-            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITs.getNode()->getContent()->getUorB();
-            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITs.getNode()->getfirstChild()->getContent()->getUorB();
-            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITs.getNode()->getlastChild()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Sref = TITgram.getNode()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Slref = TITgram.getNode()->getfirstChild()->getContent()->getUorB();
+            flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Srref = TITgram.getNode()->getlastChild()->getContent()->getUorB();
             int newnumel = Sref.numCols();
             flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > &Bref = node->getContent()->getUorB();
             flens::GeMatrix<flens::FullStorage<T,cxxblas::ColMajor> > tmp(rcnumel*newnumel,lcnumel);
@@ -5629,6 +5993,7 @@ HTuckerTree<T>::truncate2(double eps, bool isorth)
                     Bt(_((j-1)*rcnumel+1, j*rcnumel), i) = Bref(_((i-1)*rcnumel+1, i*rcnumel), j);
                 }
             }
+
             flens::blas::mm(cxxblas::NoTrans, cxxblas::NoTrans, 1.0, Bt, Sref,0.0, BtSt);
             for(int i = 1; i <= newnumel; ++i) {
                 for(int j = 1; j <= lcnumel; ++j) {
